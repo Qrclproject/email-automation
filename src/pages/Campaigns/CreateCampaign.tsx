@@ -24,8 +24,8 @@ export default function CreateCampaign() {
 
   const canGoNext = () => {
     if (step === 1) return excelData.length > 0;
-    if (step === 2) return subject.trim() !== ''; // Only requires a subject line now
-    if (step === 3) return true; // Allow proceeding even if no variables are mapped
+    if (step === 2) return subject.trim() !== '';
+    if (step === 3) return true;
     return false;
   };
 
@@ -35,7 +35,6 @@ export default function CreateCampaign() {
     navigate('/campaigns');
   };
 
-  // Extract real data for the preview based on mappings
   const firstRow = excelData.length > 0 ? excelData[0] : {};
   
   const previewName = firstRow[variableMappings['{{Full Name}}']] 
@@ -47,81 +46,83 @@ export default function CreateCampaign() {
                      || 'General Admission';
                      
   const previewQr = firstRow[variableMappings['QR_CODE']] 
-                 || firstRow[variableMappings['[QR_CODE]']] 
+                 || firstRow[variableMappings['[QR Code]']] 
                  || 'https://qrcodeng.com/verify';
                  
   const emailColumn = variableMappings['{{Email Address}}'] || variableMappings['[Email Address]'] || 'email';
   const previewEmail = firstRow[emailColumn] || 'recipient@example.com';
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto pb-12 w-full overflow-hidden">
+      {/* Stacks vertically on mobile */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Create Campaign</h1>
-          <p className="text-gray-500 text-sm">Set up your audience, design, and personalization.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Campaign</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Set up your audience, design, and personalization.</p>
         </div>
-        <button onClick={() => navigate('/campaigns')} className="text-sm font-medium text-gray-500 hover:text-gray-900">
+        <button onClick={() => navigate('/campaigns')} className="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">
           Cancel
         </button>
       </div>
 
-      <div className="flex items-center gap-2 mb-8 bg-white p-2 rounded-xl border border-gray-200 shadow-sm w-fit">
+      {/* Responsive Stepper - Horizontally scrollable */}
+      <div className="flex items-center gap-2 mb-6 md:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-x-auto w-full whitespace-nowrap hide-scrollbar">
         {steps.map((s, i) => (
-          <div key={s.id} className="flex items-center">
+          <div key={s.id} className="flex items-center shrink-0">
             <button
               onClick={() => setStep(s.id)}
               disabled={step < s.id && !canGoNext()}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                 step === s.id ? 'bg-[#FFA45C] text-[#2b1500]' : 
-                step > s.id ? 'text-green-600 bg-green-50' : 'text-gray-400'
+                step > s.id ? 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'
               }`}
             >
-              {step > s.id ? <CheckCircle2 className="w-4 h-4 inline mr-1" /> : null}
+              {step > s.id ? <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 inline mr-1" /> : null}
               {s.name}
             </button>
-            {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-gray-300" />}
+            {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 mx-1" />}
           </div>
         ))}
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 w-full">
         {step === 1 && (excelData.length > 0 ? <SpreadsheetEditor /> : <AudienceUploader />)}
         {step === 2 && <EmailComposer />}
         {step === 3 && <VariableMapper />}
         
         {step === 4 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             <div className="col-span-1">
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm sticky top-24">
-                <h2 className="font-semibold text-gray-900 mb-4">Final Review</h2>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm sticky top-24 transition-colors">
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Final Review</h2>
                 <div className="space-y-3 text-sm mb-6">
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500">Recipients</span>
-                    <span className="font-medium">{excelData.length} rows</span>
+                  <div className="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <span className="text-gray-500 dark:text-gray-400">Recipients</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{excelData.length} rows</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500">Sending Account</span>
-                    <span className="font-medium">{senderAccount}</span>
+                  <div className="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <span className="text-gray-500 dark:text-gray-400">Sending Account</span>
+                    <span className="font-medium text-gray-900 dark:text-white truncate max-w-[150px]">{senderAccount}</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500">Template</span>
-                    <span className="font-medium">{selectedTemplate?.name || 'None (Text Only)'}</span>
+                  <div className="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <span className="text-gray-500 dark:text-gray-400">Template</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{selectedTemplate?.name || 'None'}</span>
                   </div>
                 </div>
                 
                 <button onClick={handleSend} className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg mb-3 hover:bg-orange-400 transition-colors shadow-sm">
                   Launch Campaign
                 </button>
-                <button className="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <button className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                   Send Test Email
                 </button>
               </div>
             </div>
             
-            <div className="col-span-2">
+            <div className="col-span-1 lg:col-span-2 w-full max-w-full overflow-hidden">
               <div className="mb-4">
-                <h2 className="text-lg font-bold">Recipient Preview</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recipient Preview</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Showing data from Row 1: <strong>{previewName}</strong>
                 </p>
               </div>
@@ -144,10 +145,10 @@ export default function CreateCampaign() {
       </div>
 
       {step !== 1 && (
-        <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+        <div className="flex justify-between items-center mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
           <button 
             onClick={() => setStep(Math.max(1, step - 1))}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
@@ -156,7 +157,7 @@ export default function CreateCampaign() {
             <button 
               onClick={() => setStep(Math.min(4, step + 1))}
               disabled={!canGoNext()}
-              className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 transition-colors"
             >
               Next Step <ChevronRight className="w-4 h-4" />
             </button>

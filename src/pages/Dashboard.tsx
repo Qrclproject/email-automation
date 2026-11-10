@@ -17,18 +17,18 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Overview of campaigns, accounts and quota</p>
         </div>
-        <Link to="/campaigns/create" className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+        <Link to="/campaigns/create" className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center">
           + Create Campaign
         </Link>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Total contacts</p>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{totalRecipients.toLocaleString()}</h3>
@@ -56,7 +56,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quota Panel */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
           <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-6">Daily provider quota</h2>

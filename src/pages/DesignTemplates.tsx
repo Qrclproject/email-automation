@@ -23,25 +23,25 @@ export default function DesignTemplates() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Design Templates</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Reusable invitations with placeholder configs</p>
         </div>
-        <Link to="/studio" className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+        <Link to="/studio" className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 w-full sm:w-auto justify-center">
           <Plus className="w-4 h-4" /> New template
         </Link>
       </div>
 
       {designs.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-16 text-center flex flex-col items-center justify-center transition-colors">
-          <LayoutTemplate className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+        <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-8 md:p-16 text-center flex flex-col items-center justify-center transition-colors">
+          <LayoutTemplate className="w-12 h-12 md:w-16 md:h-16 text-gray-300 dark:text-gray-600 mb-4" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No templates yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first design in the Studio to see it here.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-6 text-center">Create your first design in the Studio to see it here.</p>
           <Link to="/studio" className="bg-[#FFA45C] text-[#2b1500] px-6 py-2 rounded-lg font-bold hover:bg-orange-400 transition-colors">Create Template</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {designs.map((tpl) => (
             <Link key={tpl._id} to={`/studio?edit=${tpl._id}`} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group cursor-pointer flex flex-col">
               <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-900 rounded-lg mb-4 relative overflow-hidden flex items-center justify-center">

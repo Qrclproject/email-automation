@@ -8,108 +8,32 @@ import {
   Eye, EyeOff, Check, Trash2, Image as ImageIcon, Move
 } from 'lucide-react';
 
-// ─── Shape drawing (centered, used for single large elements) ──
+// ─── Shape drawing helpers ──
 const drawCenteredShape = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, shape: string, color: string) => {
   ctx.fillStyle = color;
   const half = size / 2;
-
   switch (shape) {
-    case 'circle':
-      ctx.beginPath();
-      ctx.arc(cx, cy, half, 0, Math.PI * 2);
-      ctx.fill();
-      break;
+    case 'circle': ctx.beginPath(); ctx.arc(cx, cy, half, 0, Math.PI * 2); ctx.fill(); break;
     case 'rounded': {
       const r = size * 0.2;
-      ctx.beginPath();
-      ctx.moveTo(cx - half + r, cy - half);
-      ctx.lineTo(cx + half - r, cy - half);
-      ctx.quadraticCurveTo(cx + half, cy - half, cx + half, cy - half + r);
-      ctx.lineTo(cx + half, cy + half - r);
-      ctx.quadraticCurveTo(cx + half, cy + half, cx + half - r, cy + half);
-      ctx.lineTo(cx - half + r, cy + half);
-      ctx.quadraticCurveTo(cx - half, cy + half, cx - half, cy + half - r);
-      ctx.lineTo(cx - half, cy - half + r);
-      ctx.quadraticCurveTo(cx - half, cy - half, cx - half + r, cy - half);
-      ctx.closePath();
-      ctx.fill();
-      break;
+      ctx.beginPath(); ctx.moveTo(cx - half + r, cy - half); ctx.lineTo(cx + half - r, cy - half); ctx.quadraticCurveTo(cx + half, cy - half, cx + half, cy - half + r); ctx.lineTo(cx + half, cy + half - r); ctx.quadraticCurveTo(cx + half, cy + half, cx + half - r, cy + half); ctx.lineTo(cx - half + r, cy + half); ctx.quadraticCurveTo(cx - half, cy + half, cx - half, cy + half - r); ctx.lineTo(cx - half, cy - half + r); ctx.quadraticCurveTo(cx - half, cy - half, cx - half + r, cy - half); ctx.closePath(); ctx.fill(); break;
     }
-    case 'diamond':
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - half);
-      ctx.lineTo(cx + half, cy);
-      ctx.lineTo(cx, cy + half);
-      ctx.lineTo(cx - half, cy);
-      ctx.closePath();
-      ctx.fill();
-      break;
-    case 'star': {
-      const spikes = 5;
-      const outerRadius = half;
-      const innerRadius = half * 0.45;
-      let rot = Math.PI / 2 * 3;
-      const step = Math.PI / spikes;
-      ctx.beginPath();
-      for (let i = 0; i < spikes; i++) {
-        let bx = cx + Math.cos(rot) * outerRadius;
-        let by = cy + Math.sin(rot) * outerRadius;
-        ctx.lineTo(bx, by);
-        rot += step;
-        bx = cx + Math.cos(rot) * innerRadius;
-        by = cy + Math.sin(rot) * innerRadius;
-        ctx.lineTo(bx, by);
-        rot += step;
-      }
-      ctx.closePath();
-      ctx.fill();
-      break;
-    }
-    case 'triangle':
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - half + 2);
-      ctx.lineTo(cx + half - 2, cy + half - 2);
-      ctx.lineTo(cx - half + 2, cy + half - 2);
-      ctx.closePath();
-      ctx.fill();
-      break;
-    case 'square':
-    default:
-      ctx.fillRect(cx - half, cy - half, size, size);
+    case 'diamond': ctx.beginPath(); ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy); ctx.lineTo(cx, cy + half); ctx.lineTo(cx - half, cy); ctx.closePath(); ctx.fill(); break;
+    case 'square': default: ctx.fillRect(cx - half, cy - half, size, size);
   }
 };
 
-// ─── Draw a single QR module ────
 const drawModuleShape = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, shape: string, color: string) => {
   ctx.fillStyle = color;
   const half = size / 2;
   const s = size;
-
   switch (shape) {
-    case 'circle':
-      ctx.beginPath(); ctx.arc(x + half, y + half, half, 0, Math.PI * 2); ctx.fill(); break;
+    case 'circle': ctx.beginPath(); ctx.arc(x + half, y + half, half, 0, Math.PI * 2); ctx.fill(); break;
     case 'rounded': {
       const r = size * 0.25;
-      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + s - r, y); ctx.quadraticCurveTo(x + s, y, x + s, y + r);
-      ctx.lineTo(x + s, y + s - r); ctx.quadraticCurveTo(x + s, y + s, x + s - r, y + s);
-      ctx.lineTo(x + r, y + s); ctx.quadraticCurveTo(x, y + s, x, y + s - r);
-      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); ctx.fill(); break;
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + s - r, y); ctx.quadraticCurveTo(x + s, y, x + s, y + r); ctx.lineTo(x + s, y + s - r); ctx.quadraticCurveTo(x + s, y + s, x + s - r, y + s); ctx.lineTo(x + r, y + s); ctx.quadraticCurveTo(x, y + s, x, y + s - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); ctx.fill(); break;
     }
-    case 'diamond':
-      ctx.beginPath(); ctx.moveTo(x + half, y); ctx.lineTo(x + s, y + half); ctx.lineTo(x + half, y + s); ctx.lineTo(x, y + half); ctx.closePath(); ctx.fill(); break;
-    case 'star': {
-      const spikes = 5; const outerRadius = half; const innerRadius = half * 0.45; let rot = Math.PI / 2 * 3; const step = Math.PI / spikes;
-      ctx.beginPath();
-      for (let i = 0; i < spikes; i++) {
-        let bx = x + half + Math.cos(rot) * outerRadius; let by = y + half + Math.sin(rot) * outerRadius;
-        ctx.lineTo(bx, by); rot += step;
-        bx = x + half + Math.cos(rot) * innerRadius; by = y + half + Math.sin(rot) * innerRadius;
-        ctx.lineTo(bx, by); rot += step;
-      }
-      ctx.closePath(); ctx.fill(); break;
-    }
-    case 'triangle':
-      ctx.beginPath(); ctx.moveTo(x + half, y + 2); ctx.lineTo(x + s - 2, y + s - 2); ctx.lineTo(x + 2, y + s - 2); ctx.closePath(); ctx.fill(); break;
+    case 'diamond': ctx.beginPath(); ctx.moveTo(x + half, y); ctx.lineTo(x + s, y + half); ctx.lineTo(x + half, y + s); ctx.lineTo(x, y + half); ctx.closePath(); ctx.fill(); break;
     case 'square': default: ctx.fillRect(x, y, size, size);
   }
 };
@@ -142,12 +66,7 @@ const renderStyledQR = async (text: string, options: any) => {
     const x = cornerCol * moduleSize; const y = cornerRow * moduleSize;
     const outerSize = 7 * moduleSize; const holeSize = 5 * moduleSize; const dotSize = 3 * moduleSize;
     const cx = x + outerSize / 2; const cy = y + outerSize / 2;
-    ctx.save();
-    drawCenteredShape(ctx, cx, cy, outerSize, finderOuterShape, finderOuterColor);
-    ctx.globalCompositeOperation = 'destination-out';
-    drawCenteredShape(ctx, cx, cy, holeSize, finderOuterShape, '#000');
-    ctx.restore();
-    drawCenteredShape(ctx, cx, cy, dotSize, finderInnerShape, finderInnerColor);
+    ctx.save(); drawCenteredShape(ctx, cx, cy, outerSize, finderOuterShape, finderOuterColor); ctx.globalCompositeOperation = 'destination-out'; drawCenteredShape(ctx, cx, cy, holeSize, finderOuterShape, '#000'); ctx.restore(); drawCenteredShape(ctx, cx, cy, dotSize, finderInnerShape, finderInnerColor);
   };
 
   drawFinder(0, 0); drawFinder(0, moduleCount - 7); drawFinder(moduleCount - 7, 0);
@@ -156,10 +75,7 @@ const renderStyledQR = async (text: string, options: any) => {
     for (let col = 0; col < moduleCount; col++) {
       if (modules.get(row, col)) {
         const part = getFinderPart(row, col, moduleCount);
-        if (part === null) {
-          const x = col * moduleSize; const y = row * moduleSize;
-          drawModuleShape(ctx, x, y, moduleSize, dataShape, dataColor);
-        }
+        if (part === null) { const x = col * moduleSize; const y = row * moduleSize; drawModuleShape(ctx, x, y, moduleSize, dataShape, dataColor); }
       }
     }
   }
@@ -172,65 +88,26 @@ const drawTextOnCanvas = (ctx: CanvasRenderingContext2D, text: string, style: an
   ctx.fillStyle = style.color || '#000000';
   ctx.textAlign = style.alignment || 'left';
   ctx.textBaseline = 'top';
-  
   let displayText = text;
   if (style.textTransform === 'uppercase') displayText = text.toUpperCase();
   else if (style.textTransform === 'lowercase') displayText = text.toLowerCase();
   else if (style.textTransform === 'capitalize') displayText = text.replace(/\b\w/g, (c: string) => c.toUpperCase());
-
-  const words = displayText.split(' ');
-  const lines = [];
-  let currentLine = '';
-  
+  const words = displayText.split(' '); const lines = []; let currentLine = '';
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
     if (ctx.measureText(testLine).width <= width) { currentLine = testLine; } 
-    else {
-      if (currentLine) lines.push(currentLine);
-      if (ctx.measureText(word).width > width) {
-        let brokenLine = '';
-        for (const char of word) {
-          const testCharLine = brokenLine + char;
-          if (ctx.measureText(testCharLine).width <= width) brokenLine = testCharLine;
-          else { if (brokenLine) lines.push(brokenLine); brokenLine = char; }
-        }
-        currentLine = brokenLine;
-      } else { currentLine = word; }
-    }
+    else { if (currentLine) lines.push(currentLine); currentLine = word; }
   }
   if (currentLine) lines.push(currentLine);
-
   const lineHeight = (style.lineHeight || 1.4) * fontSize;
-  lines.forEach((line, i) => {
-    const ty = y + i * lineHeight;
-    if (ty + lineHeight > y + height) return;
-    let tx = x;
-    if (style.alignment === 'center') tx = x + width / 2;
-    else if (style.alignment === 'right') tx = x + width;
-    ctx.fillText(line, tx, ty);
-  });
+  lines.forEach((line, i) => { const ty = y + i * lineHeight; if (ty + lineHeight > y + height) return; let tx = x; if (style.alignment === 'center') tx = x + width / 2; else if (style.alignment === 'right') tx = x + width; ctx.fillText(line, tx, ty); });
 };
 
-// ─── QR Preview Component for Canvas ─────────────────────────
 const QRPreviewBox = ({ config, padding }: { config: any, padding: number }) => {
   const [url, setUrl] = useState('');
-  useEffect(() => {
-    let active = true;
-    renderStyledQR('https://qrcodeng.com/sample', config).then((res) => {
-      if (active) setUrl(res);
-    });
-    return () => { active = false; };
-  }, [config]);
-
+  useEffect(() => { let active = true; renderStyledQR('https://qrcodeng.com/sample', config).then((res) => { if (active) setUrl(res); }); return () => { active = false; }; }, [config]);
   if (!url) return <div className="w-full h-full animate-pulse bg-gray-100" />;
-  return (
-    <img 
-      src={url} 
-      className="w-full h-full object-contain pointer-events-none" 
-      style={{ padding: `${padding}%` }} 
-      alt="QR"
-    />
-  );
+  return <img src={url} className="w-full h-full object-contain pointer-events-none" style={{ padding: `${padding}%` }} alt="QR" />;
 };
 
 export default function DesignStudio() {
@@ -242,10 +119,7 @@ export default function DesignStudio() {
   const [designName, setDesignName] = useState('');
   const [qrPosition, setQrPosition] = useState({ x: 125, y: 300, width: 150, height: 150 });
   const [qrPadding, setQrPadding] = useState(15);
-  const [qrConfig, setQrConfig] = useState({
-    lightColor: '#ffffff', finderOuterColor: '#000000', finderOuterShape: 'square',
-    finderInnerColor: '#000000', finderInnerShape: 'square', dataColor: '#000000', dataShape: 'square'
-  });
+  const [qrConfig, setQrConfig] = useState({ lightColor: '#ffffff', finderOuterColor: '#000000', finderOuterShape: 'square', finderInnerColor: '#000000', finderInnerShape: 'square', dataColor: '#000000', dataShape: 'square' });
   const [textOverlays, setTextOverlays] = useState<any[]>([]);
   const [qrDataFields, setQrDataFields] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -253,7 +127,9 @@ export default function DesignStudio() {
   const [selectedOverlayIndex, setSelectedOverlayIndex] = useState<number | null>(null);
   
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  // Mobile: Controls hidden by default. Desktop: Always visible.
   const [showControlsOverlay, setShowControlsOverlay] = useState(false);
+  
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [fullscreenPreviewUrl, setFullscreenPreviewUrl] = useState('');
 
@@ -261,19 +137,13 @@ export default function DesignStudio() {
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const [naturalSize, setNaturalSize] = useState({ width: 400, height: 560 });
 
-  // Load existing design if editing
   useEffect(() => {
     if (editId) {
       getDesignById(editId).then((res) => {
         const data = res.data.data;
         if (data) {
-          setDesignName(data.name);
-          setImagePreview(data.imageUrl);
-          setQrPosition(data.qrPosition || { x: 125, y: 300, width: 150, height: 150 });
-          setQrPadding(data.qrPadding || 15);
-          if (data.qrConfig) setQrConfig(data.qrConfig);
-          if (data.textOverlays) setTextOverlays(data.textOverlays);
-          if (data.qrDataFields) setQrDataFields(data.qrDataFields);
+          setDesignName(data.name); setImagePreview(data.imageUrl); setQrPosition(data.qrPosition || { x: 125, y: 300, width: 150, height: 150 });
+          setQrPadding(data.qrPadding || 15); if (data.qrConfig) setQrConfig(data.qrConfig); if (data.textOverlays) setTextOverlays(data.textOverlays); if (data.qrDataFields) setQrDataFields(data.qrDataFields);
         }
       });
     }
@@ -281,125 +151,44 @@ export default function DesignStudio() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    if (file) { setImageFile(file); setImagePreview(URL.createObjectURL(file)); }
   };
 
-  const handleQrConfigChange = (key: string, value: string) => {
-    setQrConfig(prev => ({ ...prev, [key]: value }));
-  };
+  const handleQrConfigChange = (key: string, value: string) => { setQrConfig(prev => ({ ...prev, [key]: value })); };
 
   const addTextOverlay = () => {
-    const newOverlay = {
-      id: `ov_${Date.now()}`,
-      placeholder: '1',
-      position: { x: 50, y: 50, width: 200, height: 40 },
-      style: { fontSize: 16, color: '#000000', bold: false, italic: false, underline: false, alignment: 'left', fontFamily: 'Arial', textTransform: 'none', lineHeight: 1.4 },
-    };
-    setTextOverlays(prev => [...prev, newOverlay]);
-    setSelectedOverlayIndex(textOverlays.length);
+    const newOverlay = { id: `ov_${Date.now()}`, placeholder: '1', position: { x: 50, y: 50, width: 200, height: 40 }, style: { fontSize: 16, color: '#000000', bold: false, italic: false, underline: false, alignment: 'left', fontFamily: 'Arial', textTransform: 'none', lineHeight: 1.4 } };
+    setTextOverlays(prev => [...prev, newOverlay]); setSelectedOverlayIndex(textOverlays.length);
   };
 
-  const deleteOverlay = (index: number) => {
-    setTextOverlays(prev => prev.filter((_, i) => i !== index));
-    setSelectedOverlayIndex(null);
-  };
+  const deleteOverlay = (index: number) => { setTextOverlays(prev => prev.filter((_, i) => i !== index)); setSelectedOverlayIndex(null); };
 
   const handleSave = async () => {
     if (!designName.trim()) return alert('Please provide a design name.');
     setSaving(true);
-    
     try {
       let finalImageUrl = imagePreview;
-      if (imageFile) {
-        finalImageUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(imageFile);
-        });
-      }
-
+      if (imageFile) { finalImageUrl = await new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result as string); reader.readAsDataURL(imageFile); }); }
       const img = imgRef.current;
       const rect = img ? img.getBoundingClientRect() : { width: 400, height: 560 };
       const scaleX = naturalSize.width / rect.width;
       const scaleY = naturalSize.height / rect.height;
-
-      const data = {
-        name: designName.trim(),
-        imageUrl: finalImageUrl,
-        qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY },
-        qrPadding, qrConfig, qrDataFields,
-        textOverlays: textOverlays.map(ov => ({
-          placeholder: ov.placeholder,
-          position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY },
-          style: ov.style,
-        }))
-      };
-
-      if (editId) {
-        await updateDesign(editId, data);
-        alert('Design updated successfully!');
-      } else {
-        const formData = new FormData();
-        formData.append('name', data.name);
-        if (imageFile) formData.append('image', imageFile);
-        formData.append('data', JSON.stringify(data));
-        await createDesign(formData);
-        alert('Design saved successfully!');
-      }
-    } catch (err) {
-      alert('Error saving design');
-    } finally {
-      setSaving(false);
-    }
+      const data = { name: designName.trim(), imageUrl: finalImageUrl, qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY }, qrPadding, qrConfig, qrDataFields, textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) };
+      if (editId) { await updateDesign(editId, data); alert('Design updated successfully!'); } 
+      else { const formData = new FormData(); formData.append('name', data.name); if (imageFile) formData.append('image', imageFile); formData.append('data', JSON.stringify(data)); await createDesign(formData); alert('Design saved successfully!'); }
+    } catch (err) { alert('Error saving design'); } finally { setSaving(false); }
   };
 
-  // Render live preview
   useEffect(() => {
     const renderPreview = async () => {
-      if (!showPreview) return;
-      const canvas = previewCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d')!;
-
+      if (!showPreview) return; const canvas = previewCanvasRef.current; if (!canvas) return; const ctx = canvas.getContext('2d')!;
       canvas.width = naturalSize.width; canvas.height = naturalSize.height;
-      
-      if (imagePreview) {
-        const img = new Image(); img.src = imagePreview;
-        await new Promise(resolve => { img.onload = resolve; });
-        ctx.drawImage(img, 0, 0, naturalSize.width, naturalSize.height);
-      } else {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, naturalSize.width, naturalSize.height);
-      }
-
-      const imgElement = imgRef.current; 
-      const rect = imgElement ? imgElement.getBoundingClientRect() : { width: 400, height: 560 };
-      const scaleX = rect.width / naturalSize.width; 
-      const scaleY = rect.height / naturalSize.height;
-      
+      if (imagePreview) { const img = new Image(); img.src = imagePreview; await new Promise(resolve => { img.onload = resolve; }); ctx.drawImage(img, 0, 0, naturalSize.width, naturalSize.height); } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, naturalSize.width, naturalSize.height); }
+      const imgElement = imgRef.current; const rect = imgElement ? imgElement.getBoundingClientRect() : { width: 400, height: 560 }; const scaleX = rect.width / naturalSize.width; const scaleY = rect.height / naturalSize.height;
       const qrNatural = { x: qrPosition.x / scaleX, y: qrPosition.y / scaleY, width: qrPosition.width / scaleX, height: qrPosition.height / scaleY };
       const qrDataUrl = await renderStyledQR('Sample QR Code', qrConfig);
-      
-      if (qrDataUrl) {
-        const qrImg = new Image(); qrImg.src = qrDataUrl;
-        await new Promise(resolve => { qrImg.onload = resolve; });
-        ctx.fillStyle = qrConfig.lightColor; ctx.fillRect(qrNatural.x, qrNatural.y, qrNatural.width, qrNatural.height);
-        
-        const paddingFrac = qrPadding / 100;
-        const innerW = Math.round(qrNatural.width * (1 - paddingFrac * 2));
-        const innerH = Math.round(qrNatural.height * (1 - paddingFrac * 2));
-        const offX = Math.round((qrNatural.width - innerW) / 2); const offY = Math.round((qrNatural.height - innerH) / 2);
-        
-        ctx.drawImage(qrImg, qrNatural.x + offX, qrNatural.y + offY, innerW, innerH);
-      }
-
-      for (const overlay of textOverlays) {
-        const naturalPos = { x: overlay.position.x / scaleX, y: overlay.position.y / scaleY, width: overlay.position.width / scaleX, height: overlay.position.height / scaleY };
-        drawTextOnCanvas(ctx, overlay.placeholder || 'Text', overlay.style, naturalPos.x, naturalPos.y, naturalPos.width, naturalPos.height);
-      }
+      if (qrDataUrl) { const qrImg = new Image(); qrImg.src = qrDataUrl; await new Promise(resolve => { qrImg.onload = resolve; }); ctx.fillStyle = qrConfig.lightColor; ctx.fillRect(qrNatural.x, qrNatural.y, qrNatural.width, qrNatural.height); const paddingFrac = qrPadding / 100; const innerW = Math.round(qrNatural.width * (1 - paddingFrac * 2)); const innerH = Math.round(qrNatural.height * (1 - paddingFrac * 2)); const offX = Math.round((qrNatural.width - innerW) / 2); const offY = Math.round((qrNatural.height - innerH) / 2); ctx.drawImage(qrImg, qrNatural.x + offX, qrNatural.y + offY, innerW, innerH); }
+      for (const overlay of textOverlays) { const naturalPos = { x: overlay.position.x / scaleX, y: overlay.position.y / scaleY, width: overlay.position.width / scaleX, height: overlay.position.height / scaleY }; drawTextOnCanvas(ctx, overlay.placeholder || 'Text', overlay.style, naturalPos.x, naturalPos.y, naturalPos.width, naturalPos.height); }
     };
     renderPreview();
   }, [showPreview, imagePreview, naturalSize, qrPosition, qrPadding, qrConfig, textOverlays]);
@@ -407,42 +196,55 @@ export default function DesignStudio() {
   const shapeOptions = ['square', 'rounded', 'circle', 'diamond', 'star', 'triangle'];
 
   return (
-   <div className={`bg-white dark:bg-gray-900 flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-4rem)]'}`}>
+    <div className={`bg-white dark:bg-gray-900 flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]'}`}>
+      
       {/* Header */}
-      <div className="h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 transition-colors">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">{editId ? 'Edit Design' : 'Create Design'}</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
-            {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
-            {isEditorFullscreen ? 'Exit Fullscreen' : 'Fullscreen Editor'}
-          </button>
-          {isEditorFullscreen && (
-            <button onClick={() => setShowControlsOverlay(!showControlsOverlay)} className="text-xs bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
-              <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
-            </button>
-          )}
+      <div className="h-auto md:h-14 py-2 md:py-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 shrink-0 gap-2 transition-colors">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">{editId ? 'Edit Design' : 'Create Design'}</h1>
+        
+        <div className="flex items-center justify-between w-full md:w-auto gap-2">
+           {/* Mobile Toggle Controls Button */}
+           <button 
+             onClick={() => setShowControlsOverlay(!showControlsOverlay)} 
+             className="md:hidden flex-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium"
+           >
+             <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
+           </button>
+
+           {/* Fullscreen Button */}
+           <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="flex-1 md:flex-none text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
+             {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
+             {isEditorFullscreen ? 'Exit Full' : 'Fullscreen'}
+           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        {/* Left Sidebar Controls */}
-        {(!isEditorFullscreen || showControlsOverlay) && (
-          <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-5 shrink-0 shadow-sm z-10 transition-colors">
+        {/* Left Sidebar Controls - Hidden on mobile unless toggled */}
+        {(!isEditorFullscreen || showControlsOverlay || true) && (
+          <div className={`
+            w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-5 shrink-0 shadow-sm z-20 transition-colors
+            ${showControlsOverlay ? 'absolute inset-0 z-50 block h-full' : 'hidden md:block'}
+          `}>
+            {/* Mobile Close Button for Controls */}
+            {showControlsOverlay && (
+              <div className="flex justify-between items-center mb-4 md:hidden">
+                <h2 className="font-bold text-gray-900 dark:text-white">Settings</h2>
+                <button onClick={() => setShowControlsOverlay(false)} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg"><X className="w-5 h-5"/></button>
+              </div>
+            )}
+
             <div className="space-y-6">
-              
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 block">Design Name</label>
                 <input type="text" value={designName} onChange={(e) => setDesignName(e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 text-sm focus:ring-[#FFA45C]" placeholder="e.g., Gala Dinner Pass" />
               </div>
-
               <div>
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 block">Upload Image</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 dark:file:bg-orange-900/30 dark:file:text-orange-400 hover:file:bg-orange-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-1 text-gray-900 dark:text-white transition-colors" />
               </div>
-
               <hr className="border-gray-100 dark:border-gray-700" />
-
               <div>
                 <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">QR Code Styling</h4>
                 <div className="space-y-3">
@@ -450,7 +252,6 @@ export default function DesignStudio() {
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Background Color</label>
                     <input type="color" value={qrConfig.lightColor} onChange={(e) => handleQrConfigChange('lightColor', e.target.value)} className="w-full h-8 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
                   </div>
-                  
                   {['Outer', 'Inner', 'Data'].map((type) => (
                     <div key={type} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{type} Modules</p>
@@ -468,16 +269,13 @@ export default function DesignStudio() {
                       </div>
                     </div>
                   ))}
-
                   <div>
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 flex justify-between">QR Padding <span>{qrPadding}%</span></label>
                     <input type="range" min="0" max="50" value={qrPadding} onChange={(e) => setQrPadding(Number(e.target.value))} className="w-full accent-[#FFA45C]" />
                   </div>
                 </div>
               </div>
-
               <hr className="border-gray-100 dark:border-gray-700" />
-
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white">Text Overlays</h4>
@@ -495,88 +293,61 @@ export default function DesignStudio() {
                       </div>
                       {selectedOverlayIndex === idx && (
                         <div className="mt-2 space-y-2">
-                          <input type="text" value={ov.placeholder} onChange={(e) => {
-                            const newOv = [...textOverlays]; newOv[idx].placeholder = e.target.value; setTextOverlays(newOv);
-                          }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Placeholder e.g., 1, name" />
-                          <input type="number" value={ov.style.fontSize} onChange={(e) => {
-                            const newOv = [...textOverlays]; newOv[idx].style.fontSize = Number(e.target.value); setTextOverlays(newOv);
-                          }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Font Size" />
+                          <input type="text" value={ov.placeholder} onChange={(e) => { const newOv = [...textOverlays]; newOv[idx].placeholder = e.target.value; setTextOverlays(newOv); }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Placeholder e.g., 1, name" />
+                          <input type="number" value={ov.style.fontSize} onChange={(e) => { const newOv = [...textOverlays]; newOv[idx].style.fontSize = Number(e.target.value); setTextOverlays(newOv); }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Font Size" />
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-
               <button onClick={() => setShowPreview(!showPreview)} className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center justify-center gap-2">
                 {showPreview ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>} {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
-
             </div>
           </div>
         )}
 
         {/* Right Canvas Area */}
-        <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8 overflow-auto relative transition-colors">
+        <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4 md:p-8 overflow-auto relative transition-colors w-full">
           
           <div 
-            className="relative inline-block shadow-2xl bg-white"
+            className={`relative inline-block shadow-2xl bg-white dark:bg-gray-800 max-w-full ${!imagePreview ? 'w-full max-w-[400px]' : ''}`}
             style={{ 
-              width: imagePreview ? 'auto' : 400, 
-              height: imagePreview ? 'auto' : 560,
-              minWidth: 400, minHeight: 560 
+              width: imagePreview ? 'auto' : '100%',
+              height: imagePreview ? 'auto' : 'auto',
+              aspectRatio: imagePreview ? 'auto' : '400/560',
             }}
           >
             {imagePreview ? (
-              <img 
-                ref={imgRef} 
-                src={imagePreview} 
-                alt="template" 
-                className="max-h-[75vh] max-w-full object-contain block" 
-                onLoad={(e) => setNaturalSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} 
-              />
+              <img ref={imgRef} src={imagePreview} alt="template" className="max-h-[70vh] md:max-h-[75vh] max-w-full object-contain block" onLoad={(e) => setNaturalSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />
             ) : (
-              <div className="w-full h-full bg-white flex items-center justify-center flex-col text-gray-300 dark:text-gray-600">
-                <ImageIcon className="w-16 h-16 mb-3 opacity-20" />
-                <span className="text-sm opacity-40 font-medium">Blank Canvas</span>
+              <div className="w-full h-full bg-white dark:bg-gray-800 flex items-center justify-center flex-col text-gray-300 dark:text-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                <ImageIcon className="w-12 h-12 md:w-16 md:h-16 mb-3 opacity-20" />
+                <span className="text-xs md:text-sm opacity-40 font-medium">Blank Canvas</span>
               </div>
             )}
             
-            {/* QR Position Box - Uses _e to satisfy TypeScript */}
-            <Rnd
-              size={{ width: qrPosition.width, height: qrPosition.height }}
-              position={{ x: qrPosition.x, y: qrPosition.y }}
-              onDragStop={(_e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })}
-              onResizeStop={(_e, _dir, ref, _delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })}
-              bounds="parent"
-              className="border-2 border-dashed border-[#FFA45C] bg-white group shadow-sm z-10"
-            >
+            {/* QR Position Box */}
+            <Rnd size={{ width: qrPosition.width, height: qrPosition.height }} position={{ x: qrPosition.x, y: qrPosition.y }} onDragStop={(_e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })} onResizeStop={(_e, _dir, ref, _delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })} bounds="parent" className="border-2 border-dashed border-[#FFA45C] bg-white group shadow-sm z-10">
               <div className="w-full h-full relative overflow-hidden">
                 <QRPreviewBox config={qrConfig} padding={qrPadding} />
                 <div className="absolute inset-0 bg-[#FFA45C]/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
-                  <span className="bg-[#FFA45C] text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm flex items-center gap-1"><Move className="w-3 h-3"/> QR Code</span>
+                  <span className="bg-[#FFA45C] text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm flex items-center gap-1"><Move className="w-3 h-3"/> QR</span>
                 </div>
               </div>
             </Rnd>
 
-            {/* Text Overlays - Uses _e to satisfy TypeScript */}
+            {/* Text Overlays */}
             {textOverlays.map((ov, idx) => (
-              <Rnd
-                key={ov.id}
-                size={{ width: ov.position.width, height: ov.position.height }}
-                position={{ x: ov.position.x, y: ov.position.y }}
-                onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }}
-                onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }}
-                bounds="parent"
-                className="border border-dashed border-blue-500 bg-blue-500/10 flex items-center justify-center z-10"
-              >
+              <Rnd key={ov.id} size={{ width: ov.position.width, height: ov.position.height }} position={{ x: ov.position.x, y: ov.position.y }} onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }} onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }} bounds="parent" className="border border-dashed border-blue-500 bg-blue-500/10 flex items-center justify-center z-10">
                 <span className="text-blue-500 text-[10px] font-bold pointer-events-none">T{idx + 1}</span>
               </Rnd>
             ))}
 
-            {/* Floating Live Preview */}
+            {/* Floating Live Preview - Hidden on mobile unless Fullscreen */}
             {showPreview && (
-              <div className="absolute top-4 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
+              <div className="hidden md:block absolute top-4 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
                 <div className="flex items-center justify-between mb-1 px-1">
                   <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Live Preview</span>
                   <Maximize className="w-3 h-3 text-gray-400" />
@@ -589,10 +360,10 @@ export default function DesignStudio() {
       </div>
 
       {/* Footer Actions */}
-      <div className="h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end px-6 gap-3 shrink-0 z-20 transition-colors">
-        <button className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-        <button onClick={handleSave} disabled={saving || !imagePreview} className="px-6 py-2 bg-[#FFA45C] text-white rounded-lg text-sm font-bold hover:bg-orange-400 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
-          {saving ? 'Saving...' : <><Check className="w-4 h-4"/> {editId ? 'Update Design' : 'Save Design'}</>}
+      <div className="h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0 z-30 transition-colors">
+        <button className="px-4 md:px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+        <button onClick={handleSave} disabled={saving || !imagePreview} className="px-4 md:px-6 py-2 bg-[#FFA45C] text-white rounded-lg text-sm font-bold hover:bg-orange-400 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
+          {saving ? 'Saving...' : <><Check className="w-4 h-4"/> Save</>}
         </button>
       </div>
 

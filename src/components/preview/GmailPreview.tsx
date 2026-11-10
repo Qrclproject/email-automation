@@ -33,18 +33,13 @@ export default function GmailPreview({
 
   const processEmailBody = (html: string) => {
     if (!html) return '<p class="text-gray-400 italic">No content.</p>';
-    
     let processed = html;
-
-    // 1. Replace ALL variables in the text using the mappings
     Object.entries(variableMappings).forEach(([key, columnName]) => {
       const value = previewRow[columnName] || '';
       processed = processed.split(key).join(value);
     });
 
-    // 2. Build the visual template HTML ONLY if a templateBg exists
     let renderedTemplate = '';
-    
     if (templateBg) {
       renderedTemplate = `
         <div style="background: ${templateBg}; color: white; padding: 40px 20px; text-align: center; border-radius: 8px; margin: 20px 0; font-family: serif; max-width: 100%;">
@@ -59,44 +54,38 @@ export default function GmailPreview({
         </div>
       `;
     }
-
-    // 3. Replace the placeholder image with the rendered template
     processed = processed.replace(/<img[^>]*data-template-id="[^"]*"[^>]*>/g, renderedTemplate);
-    
     return processed;
   };
 
-  // Reusable Email Header Component
   const EmailHeader = () => (
-    <div className="p-6 border-b border-gray-100 bg-[#f8f9fa]">
-      <h2 className="text-xl font-normal text-gray-900 mb-6">{subject}</h2>
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-[#FFA45C] rounded-full flex items-center justify-center text-white font-bold text-lg">Q</div>
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-gray-900">QRCODENG Events</span>
-              <span className="text-xs text-gray-500">&lt;{senderEmail}&gt;</span>
+    <div className="p-4 sm:p-6 border-b border-gray-100 bg-[#f8f9fa]">
+      <h2 className="text-lg sm:text-xl font-normal text-gray-900 mb-4 sm:mb-6">{subject}</h2>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FFA45C] rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-lg shrink-0">Q</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <span className="font-bold text-sm text-gray-900 truncate">QRCODENG Events</span>
+              <span className="text-xs text-gray-500 truncate">&lt;{senderEmail}&gt;</span>
             </div>
             <span className="text-xs text-gray-500">10:42 AM</span>
           </div>
-          <div className="text-xs text-gray-500">to {recipientName} &lt;{recipientEmail}&gt;</div>
+          <div className="text-xs text-gray-500 truncate">to {recipientName} &lt;{recipientEmail}&gt;</div>
         </div>
       </div>
     </div>
   );
 
-  // Reusable Email Footer Component
   const EmailFooter = () => (
     <div className="p-4 border-t border-gray-100 bg-[#f8f9fa] text-center">
       <p className="text-xs text-gray-500">Sent by QRCODE Enterprise · <button className="underline">Unsubscribe</button></p>
     </div>
   );
 
-  // Reusable Email Body Content
   const EmailContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div 
-      className={`w-full ${isMobile ? 'p-4' : 'max-w-[600px] p-8'} bg-white rounded-lg rendered-email`}
+      className={`w-full ${isMobile ? 'p-4' : 'max-w-[600px] p-4 sm:p-8'} bg-white rounded-lg rendered-email overflow-hidden break-words`}
       style={{ fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: '1.6', color: '#333333' }}
       dangerouslySetInnerHTML={{ __html: processEmailBody(emailBody) }}
     />
@@ -104,14 +93,12 @@ export default function GmailPreview({
 
   return (
     <div className="w-full flex flex-col items-center">
-      
-      {/* View Mode Toggles */}
-      <div className="flex gap-2 mb-6 justify-center bg-gray-100 p-1 rounded-lg w-fit mx-auto">
+      <div className="flex gap-1 sm:gap-2 mb-4 justify-center bg-gray-100 p-1 rounded-lg w-full max-w-sm mx-auto overflow-x-auto">
         {['desktop', 'mobile', 'blocked'].map((mode) => (
           <button 
             key={mode} 
             onClick={() => setViewMode(mode as any)} 
-            className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition ${
+            className={`flex-1 px-2 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium capitalize transition whitespace-nowrap ${
               viewMode === mode ? 'bg-[#FFA45C] text-[#2b1500] shadow-sm' : 'text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -120,7 +107,6 @@ export default function GmailPreview({
         ))}
       </div>
 
-      {/* Render based on View Mode */}
       {viewMode === 'mobile' ? (
         <MobilePreview>
           <EmailHeader />
@@ -130,19 +116,18 @@ export default function GmailPreview({
           <EmailFooter />
         </MobilePreview>
       ) : viewMode === 'blocked' ? (
-        <div className="bg-gray-50 p-6 rounded-xl w-full max-w-2xl">
+        <div className="bg-gray-50 p-4 rounded-xl w-full max-w-2xl">
           <BlockedImagesView recipientName={recipientName} />
         </div>
       ) : (
         <div className="bg-white border border-gray-200 shadow-lg rounded-xl overflow-hidden w-full max-w-2xl">
           <EmailHeader />
-          <div className="bg-gray-50 p-6 min-h-[400px] flex justify-center">
+          <div className="bg-gray-50 p-4 sm:p-6 min-h-[400px] flex justify-center">
             <EmailContent />
           </div>
           <EmailFooter />
         </div>
       )}
-
     </div>
   );
 }
