@@ -14,7 +14,7 @@ const toolNav = [
   { name: 'Users & Roles', path: '/users', icon: Users },
 ];
 
-export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export default function Sidebar({ onClose }: { onClose: () => void }) {
   return (
     // REMOVED 'fixed left-0 top-0' AND 'md:h-screen'. Changed to 'h-full'
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">

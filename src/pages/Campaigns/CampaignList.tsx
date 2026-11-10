@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Filter, ArrowDownUp, LayoutList, Trash2 } from 'lucide-react';
+import { Filter, LayoutList, Trash2 } from 'lucide-react';
 import { useDashboardStore } from '../../store/useDashboardStore';
 
 export default function CampaignList() {
