@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import MobileNav from './MobileNav';
 
 export default function PageWrapper() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex font-sans text-gray-900 dark:text-gray-100 pb-16 md:pb-0 transition-colors duration-200">
+    // Removed pb-16 md:pb-0 since there is no bottom nav anymore
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex font-sans text-gray-900 dark:text-gray-100 transition-colors duration-200">
       
-      {/* Desktop Sidebar (Takes up physical space in the layout) */}
+      {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 shrink-0 h-screen sticky top-0">
         <Sidebar onClose={() => {}} />
       </div>
@@ -33,8 +33,7 @@ export default function PageWrapper() {
         </div>
       </main>
       
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
+      {/* <MobileNav />  <-- REMOVED THIS LINE */}
     </div>
   );
 }

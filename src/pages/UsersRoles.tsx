@@ -26,61 +26,67 @@ export default function UsersRoles() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Users & Roles</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage system access and granular permissions.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+        <button 
+          onClick={() => setIsModalOpen(true)} 
+          className="bg-[#FFA45C] hover:bg-orange-400 text-[#2b1500] font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 w-full sm:w-auto whitespace-nowrap"
+        >
           <Plus className="w-4 h-4" /> Invite User
         </button>
       </div>
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm transition-colors">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">User</th>
-              <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Role</th>
-              <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
-              <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Last Login</th>
-              <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#FFA45C] flex items-center justify-center text-[#2b1500] font-bold text-xs">
-                      {user.name.split(' ').map(n => n[0]).join('').substring(0,2)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${getRoleBadgeColor(user.role)}`}>
-                    <Shield className="w-3 h-3" /> {user.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <button onClick={() => toggleStatus(user.id)} className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${user.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200'}`}>
-                    {user.status}
-                  </button>
-                </td>
-                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{user.lastLogin}</td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => { if(window.confirm('Remove user?')) deleteUser(user.id); }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Remove User">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
+        {/* Added w-full to ensure the overflow container is contained */}
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left text-sm min-w-[700px]">
+            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">User</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">Role</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">Status</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">Last Login</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 text-right whitespace-nowrap">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#FFA45C] flex items-center justify-center text-[#2b1500] font-bold text-xs shrink-0">
+                        {user.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white whitespace-nowrap">{user.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${getRoleBadgeColor(user.role)} whitespace-nowrap`}>
+                      <Shield className="w-3 h-3" /> {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button onClick={() => toggleStatus(user.id)} className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors whitespace-nowrap ${user.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200'}`}>
+                      {user.status}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">{user.lastLogin}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => { if(window.confirm('Remove user?')) deleteUser(user.id); }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Remove User">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (
