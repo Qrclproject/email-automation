@@ -4,7 +4,6 @@ import QRCodeStyling from 'qr-code-styling';
 import { useStudioStore } from '../../store/useStudioStore';
 import LivePreview from './LivePreview';
 
-const MIN_QR_SIZE = 80;
 
 const QRCodeRenderer = ({ el }: { el: any }) => {
   const qrRef = useRef<HTMLDivElement>(null);
@@ -84,7 +83,7 @@ export default function Canvas() {
               }}
               bounds="parent"
               lockAspectRatio={isQR}
-              onClick={(e) => { e.stopPropagation(); selectElement(el.id); }}
+             onClick={(e: React.MouseEvent) => { e.stopPropagation(); selectElement(el.id); }}
               className={`${selectedId === el.id ? 'ring-1 ring-blue-500 bg-blue-500/5' : 'hover:ring-1 hover:ring-blue-400/30'} cursor-move`}
             >
               {isQR ? (

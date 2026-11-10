@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+// Find line 1 and change it to:
+import { createContext, useContext, useState } from 'react';
+import type { ReactNode } from 'react';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 interface Toast {

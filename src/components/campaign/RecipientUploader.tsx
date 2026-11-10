@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UploadCloud, Download, FileSpreadsheet, Edit2, CheckCircle2 } from 'lucide-react';
+import { UploadCloud, Download, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
 import { Button } from '../common/Button';
 
 interface RecipientData {

@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Mail, FileImage, Paintbrush, AtSign, Settings, Users, BarChart2, Inbox } from 'lucide-react';
-
+import { LayoutDashboard, Mail, FileImage, Paintbrush, AtSign, Settings, Users } from 'lucide-react';
 const mainNav = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Campaigns', path: '/campaigns', icon: Mail },

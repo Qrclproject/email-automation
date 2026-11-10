@@ -312,7 +312,6 @@ export default function DesignStudio() {
     setSaving(true);
     
     try {
-      // Determine the final image URL. If a new file was uploaded, convert it to Base64.
       let finalImageUrl = imagePreview;
       if (imageFile) {
         finalImageUrl = await new Promise((resolve) => {
@@ -408,17 +407,17 @@ export default function DesignStudio() {
   const shapeOptions = ['square', 'rounded', 'circle', 'diamond', 'star', 'triangle'];
 
   return (
-   <div className={`bg-white flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-4rem)]'}`}>
+   <div className={`bg-white dark:bg-gray-900 flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-4rem)]'}`}>
       {/* Header */}
-      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-        <h1 className="text-lg font-bold text-gray-900">{editId ? 'Edit Design' : 'Create Design'}</h1>
+      <div className="h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 transition-colors">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white">{editId ? 'Edit Design' : 'Create Design'}</h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
+          <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
             {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
             {isEditorFullscreen ? 'Exit Fullscreen' : 'Fullscreen Editor'}
           </button>
           {isEditorFullscreen && (
-            <button onClick={() => setShowControlsOverlay(!showControlsOverlay)} className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
+            <button onClick={() => setShowControlsOverlay(!showControlsOverlay)} className="text-xs bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
               <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
             </button>
           )}
@@ -429,40 +428,40 @@ export default function DesignStudio() {
         
         {/* Left Sidebar Controls */}
         {(!isEditorFullscreen || showControlsOverlay) && (
-          <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto p-5 shrink-0 shadow-sm z-10">
+          <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-5 shrink-0 shadow-sm z-10 transition-colors">
             <div className="space-y-6">
               
               <div>
-                <label className="text-xs font-bold text-gray-700 mb-1 block">Design Name</label>
-                <input type="text" value={designName} onChange={(e) => setDesignName(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-[#FFA45C]" placeholder="e.g., Gala Dinner Pass" />
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 block">Design Name</label>
+                <input type="text" value={designName} onChange={(e) => setDesignName(e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 text-sm focus:ring-[#FFA45C]" placeholder="e.g., Gala Dinner Pass" />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-700 mb-1 block">Upload Image</label>
-                <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 bg-white border border-gray-300 rounded-lg p-1" />
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 block">Upload Image</label>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 dark:file:bg-orange-900/30 dark:file:text-orange-400 hover:file:bg-orange-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-1 text-gray-900 dark:text-white transition-colors" />
               </div>
 
-              <hr className="border-gray-100" />
+              <hr className="border-gray-100 dark:border-gray-700" />
 
               <div>
-                <h4 className="text-sm font-bold text-gray-900 mb-3">QR Code Styling</h4>
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">QR Code Styling</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-medium text-gray-500">Background Color</label>
-                    <input type="color" value={qrConfig.lightColor} onChange={(e) => handleQrConfigChange('lightColor', e.target.value)} className="w-full h-8 p-0 border border-gray-300 rounded cursor-pointer" />
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Background Color</label>
+                    <input type="color" value={qrConfig.lightColor} onChange={(e) => handleQrConfigChange('lightColor', e.target.value)} className="w-full h-8 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
                   </div>
                   
                   {['Outer', 'Inner', 'Data'].map((type) => (
-                    <div key={type} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">{type} Modules</p>
+                    <div key={type} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{type} Modules</p>
                       <div className="flex gap-2">
                         <div className="flex-1">
-                          <label className="text-[10px] text-gray-500">Color</label>
-                          <input type="color" value={(qrConfig as any)[`${type.toLowerCase()}Color`] || (type==='Data'?qrConfig.dataColor:qrConfig[`${type.toLowerCase()}Color` as keyof typeof qrConfig])} onChange={(e) => handleQrConfigChange(type === 'Data' ? 'dataColor' : type === 'Outer' ? 'finderOuterColor' : 'finderInnerColor', e.target.value)} className="w-full h-6 p-0 border border-gray-300 rounded cursor-pointer" />
+                          <label className="text-[10px] text-gray-500 dark:text-gray-400">Color</label>
+                          <input type="color" value={(qrConfig as any)[`${type.toLowerCase()}Color`] || (type==='Data'?qrConfig.dataColor:qrConfig[`${type.toLowerCase()}Color` as keyof typeof qrConfig])} onChange={(e) => handleQrConfigChange(type === 'Data' ? 'dataColor' : type === 'Outer' ? 'finderOuterColor' : 'finderInnerColor', e.target.value)} className="w-full h-6 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
                         </div>
                         <div className="flex-1">
-                          <label className="text-[10px] text-gray-500">Shape</label>
-                          <select value={type === 'Data' ? qrConfig.dataShape : type === 'Outer' ? qrConfig.finderOuterShape : qrConfig.finderInnerShape} onChange={(e) => handleQrConfigChange(type === 'Data' ? 'dataShape' : type === 'Outer' ? 'finderOuterShape' : 'finderInnerShape', e.target.value)} className="w-full border border-gray-300 rounded text-xs p-1">
+                          <label className="text-[10px] text-gray-500 dark:text-gray-400">Shape</label>
+                          <select value={type === 'Data' ? qrConfig.dataShape : type === 'Outer' ? qrConfig.finderOuterShape : qrConfig.finderInnerShape} onChange={(e) => handleQrConfigChange(type === 'Data' ? 'dataShape' : type === 'Outer' ? 'finderOuterShape' : 'finderInnerShape', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-xs p-1">
                             {shapeOptions.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
                         </div>
@@ -471,26 +470,26 @@ export default function DesignStudio() {
                   ))}
 
                   <div>
-                    <label className="text-[10px] font-medium text-gray-500 flex justify-between">QR Padding <span>{qrPadding}%</span></label>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 flex justify-between">QR Padding <span>{qrPadding}%</span></label>
                     <input type="range" min="0" max="50" value={qrPadding} onChange={(e) => setQrPadding(Number(e.target.value))} className="w-full accent-[#FFA45C]" />
                   </div>
                 </div>
               </div>
 
-              <hr className="border-gray-100" />
+              <hr className="border-gray-100 dark:border-gray-700" />
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-sm font-bold text-gray-900">Text Overlays</h4>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">Text Overlays</h4>
                   <button onClick={addTextOverlay} className="text-xs bg-[#FFA45C] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-orange-400 flex items-center gap-1"><Plus className="w-3 h-3"/> Add</button>
                 </div>
                 <div className="space-y-2">
                   {textOverlays.map((ov, idx) => (
-                    <div key={ov.id} className="bg-gray-50 p-2 rounded-lg border border-gray-200">
+                    <div key={ov.id} className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium">Overlay {idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-900 dark:text-white">Overlay {idx + 1}</span>
                         <div className="flex gap-2">
-                          <button onClick={() => setSelectedOverlayIndex(idx === selectedOverlayIndex ? null : idx)} className="text-xs text-orange-600 hover:underline">{selectedOverlayIndex === idx ? 'Hide' : 'Edit'}</button>
+                          <button onClick={() => setSelectedOverlayIndex(idx === selectedOverlayIndex ? null : idx)} className="text-xs text-orange-600 dark:text-orange-400 hover:underline">{selectedOverlayIndex === idx ? 'Hide' : 'Edit'}</button>
                           <button onClick={() => deleteOverlay(idx)} className="text-xs text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3"/></button>
                         </div>
                       </div>
@@ -498,10 +497,10 @@ export default function DesignStudio() {
                         <div className="mt-2 space-y-2">
                           <input type="text" value={ov.placeholder} onChange={(e) => {
                             const newOv = [...textOverlays]; newOv[idx].placeholder = e.target.value; setTextOverlays(newOv);
-                          }} className="w-full border border-gray-300 rounded px-2 py-1 text-xs" placeholder="Placeholder e.g., 1, name" />
+                          }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Placeholder e.g., 1, name" />
                           <input type="number" value={ov.style.fontSize} onChange={(e) => {
                             const newOv = [...textOverlays]; newOv[idx].style.fontSize = Number(e.target.value); setTextOverlays(newOv);
-                          }} className="w-full border border-gray-300 rounded px-2 py-1 text-xs" placeholder="Font Size" />
+                          }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Font Size" />
                         </div>
                       )}
                     </div>
@@ -509,7 +508,7 @@ export default function DesignStudio() {
                 </div>
               </div>
 
-              <button onClick={() => setShowPreview(!showPreview)} className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition flex items-center justify-center gap-2">
+              <button onClick={() => setShowPreview(!showPreview)} className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center justify-center gap-2">
                 {showPreview ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>} {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
 
@@ -518,7 +517,7 @@ export default function DesignStudio() {
         )}
 
         {/* Right Canvas Area */}
-        <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 overflow-auto relative">
+        <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8 overflow-auto relative transition-colors">
           
           <div 
             className="relative inline-block shadow-2xl bg-white"
@@ -537,18 +536,18 @@ export default function DesignStudio() {
                 onLoad={(e) => setNaturalSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} 
               />
             ) : (
-              <div className="w-full h-full bg-white flex items-center justify-center flex-col text-gray-300">
+              <div className="w-full h-full bg-white flex items-center justify-center flex-col text-gray-300 dark:text-gray-600">
                 <ImageIcon className="w-16 h-16 mb-3 opacity-20" />
                 <span className="text-sm opacity-40 font-medium">Blank Canvas</span>
               </div>
             )}
             
-            {/* QR Position Box */}
+            {/* QR Position Box - Uses _e to satisfy TypeScript */}
             <Rnd
               size={{ width: qrPosition.width, height: qrPosition.height }}
               position={{ x: qrPosition.x, y: qrPosition.y }}
-              onDragStop={(e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })}
-              onResizeStop={(e, dir, ref, delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })}
+              onDragStop={(_e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })}
+              onResizeStop={(_e, _dir, ref, _delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })}
               bounds="parent"
               className="border-2 border-dashed border-[#FFA45C] bg-white group shadow-sm z-10"
             >
@@ -560,14 +559,14 @@ export default function DesignStudio() {
               </div>
             </Rnd>
 
-            {/* Text Overlays */}
+            {/* Text Overlays - Uses _e to satisfy TypeScript */}
             {textOverlays.map((ov, idx) => (
               <Rnd
                 key={ov.id}
                 size={{ width: ov.position.width, height: ov.position.height }}
                 position={{ x: ov.position.x, y: ov.position.y }}
-                onDragStop={(e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }}
-                onResizeStop={(e, dir, ref, delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }}
+                onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }}
+                onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }}
                 bounds="parent"
                 className="border border-dashed border-blue-500 bg-blue-500/10 flex items-center justify-center z-10"
               >
@@ -577,12 +576,12 @@ export default function DesignStudio() {
 
             {/* Floating Live Preview */}
             {showPreview && (
-              <div className="absolute top-4 right-4 w-48 bg-white border border-gray-200 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
+              <div className="absolute top-4 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
                 <div className="flex items-center justify-between mb-1 px-1">
-                  <span className="text-[10px] font-bold text-gray-500">Live Preview</span>
+                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Live Preview</span>
                   <Maximize className="w-3 h-3 text-gray-400" />
                 </div>
-                <canvas ref={previewCanvasRef} className="w-full h-auto max-h-48 object-contain rounded border border-gray-100 bg-gray-50" />
+                <canvas ref={previewCanvasRef} className="w-full h-auto max-h-48 object-contain rounded border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" />
               </div>
             )}
           </div>
@@ -590,9 +589,9 @@ export default function DesignStudio() {
       </div>
 
       {/* Footer Actions */}
-      <div className="h-16 bg-white border-t border-gray-200 flex items-center justify-end px-6 gap-3 shrink-0 z-20">
-        <button className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-        <button onClick={handleSave} disabled={saving || !imagePreview} className="px-6 py-2 bg-[#FFA45C] text-white rounded-lg text-sm font-bold hover:bg-orange-400 shadow-sm disabled:opacity-50 flex items-center gap-2">
+      <div className="h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end px-6 gap-3 shrink-0 z-20 transition-colors">
+        <button className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+        <button onClick={handleSave} disabled={saving || !imagePreview} className="px-6 py-2 bg-[#FFA45C] text-white rounded-lg text-sm font-bold hover:bg-orange-400 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
           {saving ? 'Saving...' : <><Check className="w-4 h-4"/> {editId ? 'Update Design' : 'Save Design'}</>}
         </button>
       </div>

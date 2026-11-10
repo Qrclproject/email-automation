@@ -1,38 +1,50 @@
-import { useMutation } from '@tanstack/react-query';
-import { authService } from '../services/authService';
+import { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
+import { loginApi, signupApi } from '../services/authService';
+import type { AuthResponse } from '../types';
 
 export const useAuth = () => {
-  const { login: setAuthState, logout: clearAuthState } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, token, isAuthenticated, logout, setAuthState } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const loginMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string, password: string }) => authService.login(email, password),
-    onSuccess: (data) => {
-      setAuthState(data.user, data.token);
-      navigate('/dashboard');
-    },
-    onError: (error) => {
-      console.error('Login failed:', error);
-    }
-  });
-
-  const logout = async () => {
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      await authService.logout();
-    } catch (e) {
-      console.error(e);
+      // Explicitly type the response as AuthResponse
+      const data: AuthResponse = await loginApi(email, password);
+      setAuthState(data.user, data.token);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed');
+      throw err;
     } finally {
-      clearAuthState();
-      navigate('/login');
+      setLoading(false);
+    }
+  };
+
+  const signup = async (name: string, email: string, password: string, role: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data: AuthResponse = await signupApi(name, email, password, role);
+      setAuthState(data.user, data.token);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Signup failed');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
-    login: loginMutation.mutate,
-    isLoggingIn: loginMutation.isPending,
-    loginError: loginMutation.error,
+    user,
+    token,
+    isAuthenticated,
+    loading,
+    error,
+    login,
+    signup,
     logout
   };
 };

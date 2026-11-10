@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-
+// Find line 1 and change it to:
+import type { ReactNode } from 'react';
 export default function MobilePreview({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-[360px] border-[10px] border-gray-900 rounded-[2.5rem] overflow-hidden shadow-2xl bg-gray-50 relative shrink-0">

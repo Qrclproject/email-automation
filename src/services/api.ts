@@ -1,34 +1,35 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
-// Replace with your actual API URL from your environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
+// Create a base Axios instance
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', // Replace with your actual API URL later
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request Interceptor: Attach JWT Token
+// Request Interceptor: Automatically attach the auth token to every request
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().token;
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response Interceptor: Handle Token Expiration
+// Response Interceptor: Handle global errors (like 401 Unauthorized)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Auto-logout if token expires
+      // Token expired or invalid, log the user out
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }

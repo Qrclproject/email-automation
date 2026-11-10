@@ -14,7 +14,8 @@ export interface StudioElement {
   fontFamily: string;
   textAlign: 'left' | 'center' | 'right';
   fontWeight: number;
-  qrDataFields?: string[]; // The mapped variables for the QR code
+  qrDataFields?: string[]; 
+   qrDataField?: string;// The mapped variables for the QR code
 }
 
 interface StudioState {
@@ -45,7 +46,7 @@ interface StudioState {
 
 export const useStudioStore = create<StudioState>((set) => ({
   elements: [
-    { id: 'qr_1', type: 'qr', x: 130, y: 380, width: 160, fontSize: 0, color: '#000', fontFamily: '', textAlign: 'center', fontWeight: 400, qrDataFields: ['Attendee Name', '1'] },
+    { id: 'qr_1', type: 'qr', x: 130, y: 380, width: 160, fontSize: 0, color: '#000', fontFamily: '', textAlign: 'center', fontWeight: 400,  qrDataFields: ['Attendee Name', '1'], qrDataField: '{{Unique Ticket Link}}' },
     { id: 'text_1', type: 'text', text: '{{Full Name}}', x: 50, y: 200, width: 320, fontSize: 32, color: '#ffffff', fontFamily: 'serif', textAlign: 'center', fontWeight: 700 },
   ],
   selectedId: 'qr_1',
