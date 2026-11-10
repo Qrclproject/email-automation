@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+/* Tell Tailwind to use the class strategy for dark mode (v4 syntax) */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* --- Advanced Quill Toolbar Styling --- */
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: #f8f9fa;
+  padding: 8px 12px !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Add dividers between groups of icons */
+.ql-toolbar .ql-formats {
+  border-right: 1px solid #d1d5db;
+  padding-right: 8px;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+}
+.ql-toolbar .ql-formats:last-child {
+  border-right: none;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* Make the pickers (font size, color) look slightly cleaner */
+.ql-snow .ql-picker {
+  color: #4b5563;
+}
+.ql-snow .ql-picker-options {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Active state color */
+.ql-snow.ql-toolbar button:hover,
+.ql-snow.ql-toolbar button:focus,
+.ql-snow.ql-toolbar button.ql-active,
+.ql-snow.ql-toolbar .ql-picker-label:hover,
+.ql-snow.ql-toolbar .ql-picker-label.ql-active,
+.ql-snow.ql-toolbar .ql-picker-item:hover,
+.ql-snow.ql-toolbar .ql-picker-item.ql-selected {
+  color: #FFA45C !important;
+}
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #FFA45C !important;
+}
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+  fill: #FFA45C !important;
+}
+
+/* --- Quill Editor Base Styles --- */
+.ql-container.ql-snow {
+  border: none !important;
+  font-family: inherit;
+  font-size: 14px;
+  flex: 1;
+  min-height: 300px;
+}
+
+.ql-editor {
+  min-height: 300px;
+  padding: 24px !important;
+  line-height: 1.6;
+}
+
+.ql-editor p {
+  margin-bottom: 1em;
+}
+
+/* --- Custom Styling for the Mission Box (Blockquote) --- */
+.ql-editor blockquote,
+.rendered-email blockquote {
+  background-color: #f0f8ff !important;
+  border-left: 4px solid #3b82f6 !important;
+  padding: 8px 20px !important;
+  margin: 0 !important; /* Remove margin so lines touch */
+  font-style: normal !important;
+  border-radius: 0 !important; /* Remove radius so lines touch */
+  color: #333333 !important;
+}
+
+/* Add top margin and rounding ONLY to the first line of the box */
+.ql-editor blockquote:first-child,
+.rendered-email blockquote:first-child {
+  margin-top: 20px !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 4px !important;
+  padding-top: 16px !important;
+}
+
+/* Add bottom margin and rounding ONLY to the last line of the box */
+.ql-editor blockquote:last-child,
+.rendered-email blockquote:last-child {
+  margin-bottom: 20px !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  padding-bottom: 16px !important;
+}
+
+/* If the box only has one line */
+.ql-editor blockquote:only-child,
+.rendered-email blockquote:only-child {
+  margin: 20px 0 !important;
+  border-radius: 4px !important;
+  padding: 16px 20px !important;
+}
+
+/* Fix bullet points inside the rendered email and editor */
+.ql-editor ul,
+.rendered-email ul {
+  list-style-type: disc !important;
+  padding-left: 20px !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.ql-editor li,
+.rendered-email li {
+  margin-bottom: 4px !important;
+  display: list-item !important;
+}
