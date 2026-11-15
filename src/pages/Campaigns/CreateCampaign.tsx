@@ -1,19 +1,28 @@
+import { useState } from 'react';
 import { useCampaignStore } from '../../store/useCampaignStore';
 import AudienceUploader from '../../components/campaign/AudienceUploader';
 import SpreadsheetEditor from '../../components/campaign/SpreadsheetEditor';
 import EmailComposer from '../../components/campaign/EmailComposer';
 import VariableMapper from '../../components/campaign/VariableMapper';
 import GmailPreview from '../../components/preview/GmailPreview';
-import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle2, Loader2, UploadCloud, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 export default function CreateCampaign() {
   const { 
     step, setStep, subject, senderAccount, selectedTemplate, 
-    variableMappings, excelData, resetCampaign, emailBody
+    variableMappings, excelData, excelColumns, resetCampaign, emailBody
   } = useCampaignStore();
   
   const navigate = useNavigate();
+  
+  // Progress States
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchStage, setLaunchStage] = useState<'preparing' | 'sending'>('preparing');
+  const [launchProgress, setLaunchProgress] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const steps = [
     { id: 1, name: 'Audience Data' },
@@ -29,32 +38,126 @@ export default function CreateCampaign() {
     return false;
   };
 
-  const handleSend = () => {
-    alert('Campaign launched successfully! Redirecting to campaigns...');
-    resetCampaign();
-    navigate('/campaigns');
+  const handleSend = async () => {
+    setIsLaunching(true);
+    setLaunchStage('preparing'); // Start at Preparing stage
+    setTotalCount(excelData.length);
+    setSentCount(0);
+    setLaunchProgress(0);
+
+    try {
+      const recipients = excelData.map(row => ({
+        data: row,
+        status: 'Pending',
+      }));
+
+      // 1. Create Campaign (This is where DB save and Queue happens)
+      const response = await api.post('/campaigns', {
+        name: subject || 'New Campaign',
+        subject: subject,
+        senderAccount: senderAccount,
+        status: 'Sending',
+        template: selectedTemplate,
+        columns: excelColumns,
+        recipients: recipients,
+        variableMappings: variableMappings,
+        emailBody: emailBody,
+      });
+
+      const campaignId = response.data._id;
+      
+      // Switch UI to Sending stage
+      setLaunchStage('sending');
+
+      // 2. Poll for progress
+      const interval = setInterval(async () => {
+        try {
+          const res = await api.get(`/campaigns/${campaignId}`);
+          const campaign = res.data;
+          
+          setSentCount(campaign.sentCount || 0);
+          setLaunchProgress(campaign.progress || 0);
+
+          if (campaign.status === 'Completed' || campaign.progress === 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              alert('Campaign launched successfully! All emails sent.');
+              resetCampaign();
+              navigate('/campaigns');
+            }, 1000); 
+          }
+        } catch (error) {
+          console.error('Error polling campaign:', error);
+        }
+      }, 2000); 
+
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.message || 'Failed to launch campaign');
+      setIsLaunching(false);
+    }
   };
 
   const firstRow = excelData.length > 0 ? excelData[0] : {};
-  
-  const previewName = firstRow[variableMappings['{{Full Name}}']] 
-                   || firstRow[variableMappings['[Recipient Name]']] 
-                   || 'Valued Guest';
-                   
-  const previewTicket = firstRow[variableMappings['{{Ticket Type}}']] 
-                     || firstRow[variableMappings['[Ticket Type]']] 
-                     || 'General Admission';
-                     
-  const previewQr = firstRow[variableMappings['QR_CODE']] 
-                 || firstRow[variableMappings['[QR Code]']] 
-                 || 'https://qrcodeng.com/verify';
-                 
+  const previewName = firstRow[variableMappings['{{Full Name}}']] || firstRow[variableMappings['[Recipient Name]']] || 'Valued Guest';
+  const previewTicket = firstRow[variableMappings['{{Ticket Type}}']] || firstRow[variableMappings['[Ticket Type]']] || 'General Admission';
+  const previewQr = firstRow[variableMappings['QR_CODE']] || firstRow[variableMappings['[QR Code]']] || 'https://qrcodeng.com/verify';
   const emailColumn = variableMappings['{{Email Address}}'] || variableMappings['[Email Address]'] || 'email';
   const previewEmail = firstRow[emailColumn] || 'recipient@example.com';
 
   return (
-    <div className="max-w-7xl mx-auto pb-12 w-full overflow-hidden">
-      {/* Stacks vertically on mobile */}
+    <div className="max-w-7xl mx-auto pb-12 w-full overflow-hidden relative">
+      
+      {/* LAUNCHING PROGRESS MODAL OVERLAY */}
+      {isLaunching && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center border border-gray-200 dark:border-gray-700 transition-all">
+            
+            {launchStage === 'preparing' ? (
+              // STAGE 1: PREPARING / HOSTING
+              <>
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/30 rounded-full animate-ping"></div>
+                  <div className="relative bg-white dark:bg-gray-800 w-20 h-20 rounded-full flex items-center justify-center border-4 border-[#FFA45C]">
+                    <UploadCloud className="w-8 h-8 text-[#FFA45C]" />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Preparing Media...</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  Uploading templates, images, and saving campaign to the database.
+                </p>
+                <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-4 overflow-hidden">
+                  <div className="bg-[#FFA45C] h-2 rounded-full w-1/2 animate-[pulse_1s_ease-in-out_infinite]"></div>
+                </div>
+              </>
+            ) : (
+              // STAGE 2: SENDING EMAILS
+              <>
+                <div className="w-20 h-20 mx-auto mb-6 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                  <Send className="w-8 h-8 text-[#FFA45C] animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Sending Campaign...</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-8">Please keep this window open while we send your emails.</p>
+                
+                <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-4 mb-4 overflow-hidden">
+                  <div 
+                    className="bg-[#FFA45C] h-4 rounded-full transition-all duration-1000 ease-out" 
+                    style={{ width: `${launchProgress}%` }}
+                  ></div>
+                </div>
+                
+                <div className="flex justify-between text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <span>{sentCount} of {totalCount} sent</span>
+                  <span>{launchProgress}%</span>
+                </div>
+              </>
+            )}
+            
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Campaign</h1>
@@ -65,7 +168,7 @@ export default function CreateCampaign() {
         </button>
       </div>
 
-      {/* Responsive Stepper - Horizontally scrollable */}
+      {/* Stepper */}
       <div className="flex items-center gap-2 mb-6 md:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-x-auto w-full whitespace-nowrap hide-scrollbar">
         {steps.map((s, i) => (
           <div key={s.id} className="flex items-center shrink-0">
@@ -104,17 +207,10 @@ export default function CreateCampaign() {
                     <span className="text-gray-500 dark:text-gray-400">Sending Account</span>
                     <span className="font-medium text-gray-900 dark:text-white truncate max-w-[150px]">{senderAccount}</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
-                    <span className="text-gray-500 dark:text-gray-400">Template</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{selectedTemplate?.name || 'None'}</span>
-                  </div>
                 </div>
                 
-                <button onClick={handleSend} className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg mb-3 hover:bg-orange-400 transition-colors shadow-sm">
-                  Launch Campaign
-                </button>
-                <button className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  Send Test Email
+                <button onClick={handleSend} disabled={isLaunching} className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg mb-3 hover:bg-orange-400 transition-colors shadow-sm disabled:opacity-50 flex justify-center items-center gap-2">
+                  {isLaunching ? <><Loader2 className="w-4 h-4 animate-spin"/> Processing...</> : 'Launch Campaign'}
                 </button>
               </div>
             </div>
@@ -122,9 +218,6 @@ export default function CreateCampaign() {
             <div className="col-span-1 lg:col-span-2 w-full max-w-full overflow-hidden">
               <div className="mb-4">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recipient Preview</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing data from Row 1: <strong>{previewName}</strong>
-                </p>
               </div>
               
               <GmailPreview 
@@ -133,7 +226,6 @@ export default function CreateCampaign() {
                 recipientEmail={previewEmail}
                 senderEmail={senderAccount}
                 emailBody={emailBody} 
-                templateBg={selectedTemplate?.previewBg}
                 mappedTicket={previewTicket}
                 qrData={previewQr}
                 variableMappings={variableMappings}
@@ -148,7 +240,8 @@ export default function CreateCampaign() {
         <div className="flex justify-between items-center mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
           <button 
             onClick={() => setStep(Math.max(1, step - 1))}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            disabled={isLaunching}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
@@ -156,7 +249,7 @@ export default function CreateCampaign() {
           {step < 4 && (
             <button 
               onClick={() => setStep(Math.min(4, step + 1))}
-              disabled={!canGoNext()}
+              disabled={!canGoNext() || isLaunching}
               className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 transition-colors"
             >
               Next Step <ChevronRight className="w-4 h-4" />

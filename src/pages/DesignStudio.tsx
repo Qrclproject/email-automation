@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createDesign, updateDesign, getDesignById } from '../services/designService';
 import QRCode from 'qrcode';
 import { 
@@ -113,6 +113,7 @@ const QRPreviewBox = ({ config, padding }: { config: any, padding: number }) => 
 export default function DesignStudio() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
+  const navigate = useNavigate();
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -127,7 +128,6 @@ export default function DesignStudio() {
   const [selectedOverlayIndex, setSelectedOverlayIndex] = useState<number | null>(null);
   
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
-  // Mobile: Controls hidden by default. Desktop: Always visible.
   const [showControlsOverlay, setShowControlsOverlay] = useState(false);
   
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
@@ -167,16 +167,42 @@ export default function DesignStudio() {
     if (!designName.trim()) return alert('Please provide a design name.');
     setSaving(true);
     try {
-      let finalImageUrl = imagePreview;
-      if (imageFile) { finalImageUrl = await new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result as string); reader.readAsDataURL(imageFile); }); }
       const img = imgRef.current;
       const rect = img ? img.getBoundingClientRect() : { width: 400, height: 560 };
       const scaleX = naturalSize.width / rect.width;
       const scaleY = naturalSize.height / rect.height;
-      const data = { name: designName.trim(), imageUrl: finalImageUrl, qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY }, qrPadding, qrConfig, qrDataFields, textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) };
-      if (editId) { await updateDesign(editId, data); alert('Design updated successfully!'); } 
-      else { const formData = new FormData(); formData.append('name', data.name); if (imageFile) formData.append('image', imageFile); formData.append('data', JSON.stringify(data)); await createDesign(formData); alert('Design saved successfully!'); }
-    } catch (err) { alert('Error saving design'); } finally { setSaving(false); }
+      
+      // Do NOT read the file as base64. Just pass the metadata.
+      // If there is a new file, we omit imageUrl so the backend uses the MinIO upload URL.
+      const data = { 
+        name: designName.trim(), 
+        ...(imageFile ? {} : { imageUrl: imagePreview }), 
+        qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY }, 
+        qrPadding, 
+        qrConfig, 
+        qrDataFields, 
+        textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) 
+      };
+      
+      if (editId) { 
+        await updateDesign(editId, data); 
+        alert('Design updated successfully!'); 
+      } else { 
+        const formData = new FormData(); 
+        formData.append('name', data.name); 
+        if (imageFile) formData.append('image', imageFile); 
+        formData.append('data', JSON.stringify(data)); 
+        await createDesign(formData); 
+        alert('Design saved successfully!'); 
+      }
+      
+      navigate('/templates');
+    } catch (err) { 
+      console.error(err);
+      alert('Error saving design'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   useEffect(() => {
@@ -203,7 +229,6 @@ export default function DesignStudio() {
         <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">{editId ? 'Edit Design' : 'Create Design'}</h1>
         
         <div className="flex items-center justify-between w-full md:w-auto gap-2">
-           {/* Mobile Toggle Controls Button */}
            <button 
              onClick={() => setShowControlsOverlay(!showControlsOverlay)} 
              className="md:hidden flex-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium"
@@ -211,7 +236,6 @@ export default function DesignStudio() {
              <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
            </button>
 
-           {/* Fullscreen Button */}
            <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="flex-1 md:flex-none text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
              {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
              {isEditorFullscreen ? 'Exit Full' : 'Fullscreen'}
@@ -221,13 +245,12 @@ export default function DesignStudio() {
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        {/* Left Sidebar Controls - Hidden on mobile unless toggled */}
+        {/* Left Sidebar Controls */}
         {(!isEditorFullscreen || showControlsOverlay || true) && (
           <div className={`
             w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-5 shrink-0 shadow-sm z-20 transition-colors
             ${showControlsOverlay ? 'absolute inset-0 z-50 block h-full' : 'hidden md:block'}
           `}>
-            {/* Mobile Close Button for Controls */}
             {showControlsOverlay && (
               <div className="flex justify-between items-center mb-4 md:hidden">
                 <h2 className="font-bold text-gray-900 dark:text-white">Settings</h2>
@@ -345,7 +368,7 @@ export default function DesignStudio() {
               </Rnd>
             ))}
 
-            {/* Floating Live Preview - Hidden on mobile unless Fullscreen */}
+            {/* Floating Live Preview */}
             {showPreview && (
               <div className="hidden md:block absolute top-4 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
                 <div className="flex items-center justify-between mb-1 px-1">
@@ -361,7 +384,7 @@ export default function DesignStudio() {
 
       {/* Footer Actions */}
       <div className="h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0 z-30 transition-colors">
-        <button className="px-4 md:px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+        <button onClick={() => navigate('/templates')} className="px-4 md:px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
         <button onClick={handleSave} disabled={saving || !imagePreview} className="px-4 md:px-6 py-2 bg-[#FFA45C] text-white rounded-lg text-sm font-bold hover:bg-orange-400 shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
           {saving ? 'Saving...' : <><Check className="w-4 h-4"/> Save</>}
         </button>

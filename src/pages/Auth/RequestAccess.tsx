@@ -11,15 +11,18 @@ export default function RequestAccess() {
   const signup = useAuthStore((state) => state.signup);
   const navigate = useNavigate();
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    signup(name, email, role);
-    navigate('/dashboard');
+    try {
+      await signup(name, email, password, role);
+      navigate('/dashboard');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Signup failed. Please try again.');
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 md:p-6 transition-colors">
-      
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 w-full max-w-xl overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-[#FFA45C]"></div>
         

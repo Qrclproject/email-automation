@@ -1,10 +1,17 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { useAccountStore } from '../store/useAccountStore';
 
 export default function Dashboard() {
-  const { campaigns } = useDashboardStore();
-  const { accounts } = useAccountStore();
+  const { campaigns, fetchCampaigns } = useDashboardStore();
+  const { accounts, fetchAccounts } = useAccountStore();
+
+  // Fetch data from the backend when the component mounts
+  useEffect(() => {
+    fetchCampaigns();
+    fetchAccounts();
+  }, [fetchCampaigns, fetchAccounts]);
 
   const totalCampaigns = campaigns.length;
   const totalRecipients = campaigns.reduce((sum, c) => sum + c.recipients, 0);
@@ -61,20 +68,24 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
           <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-6">Daily provider quota</h2>
           <div className="space-y-5">
-            {accounts.map(account => (
-              <div key={account.id}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{account.email}</span>
-                  <span className="text-gray-500 dark:text-gray-400">{account.sentToday} / {account.dailyLimit}</span>
+            {accounts.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No accounts connected yet.</p>
+            ) : (
+              accounts.map(account => (
+                <div key={account.id}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{account.email}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{account.sentToday} / {account.dailyLimit}</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#FFA45C] rounded-full transition-all" 
+                      style={{ width: `${Math.min((account.sentToday / Number(account.dailyLimit)) * 100, 100)}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#FFA45C] rounded-full transition-all" 
-                    style={{ width: `${Math.min((account.sentToday / account.dailyLimit) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-6">Illustrative limits. The system applies each provider's real quota.</p>
         </div>

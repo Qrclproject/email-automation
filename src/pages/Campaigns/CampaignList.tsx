@@ -1,28 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Filter, LayoutList, Trash2 } from 'lucide-react';
 import { useDashboardStore } from '../../store/useDashboardStore';
 
 export default function CampaignList() {
-  const { campaigns, deleteCampaign, deleteMultipleCampaigns } = useDashboardStore();
+  const { campaigns, deleteCampaign, deleteMultipleCampaigns, fetchCampaigns } = useDashboardStore();
   const [selected, setSelected] = useState<string[]>([]);
   const [showStats, setShowStats] = useState(true);
   const navigate = useNavigate();
 
+  // 1. Initial Fetch
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  // 2. Auto-refresh if any campaign is currently sending
+  useEffect(() => {
+    const hasSendingCampaigns = campaigns.some(c => c.status === 'Sending');
+    
+    if (hasSendingCampaigns) {
+      const interval = setInterval(() => {
+        fetchCampaigns();
+      }, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [campaigns, fetchCampaigns]);
+
   const toggleSelect = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const toggleAll = () => setSelected(selected.length === campaigns.length ? [] : campaigns.map(c => c.id));
 
-  const handleDeleteSingle = (e: React.MouseEvent, id: string) => {
+  const handleDeleteSingle = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this campaign?')) {
-      deleteCampaign(id);
+      await deleteCampaign(id);
       setSelected(prev => prev.filter(x => x !== id));
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (window.confirm(`Are you sure you want to delete ${selected.length} campaigns?`)) {
-      deleteMultipleCampaigns(selected);
+      await deleteMultipleCampaigns(selected);
       setSelected([]);
     }
   };
@@ -89,36 +106,44 @@ export default function CampaignList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {campaigns.map((c) => (
-                <tr key={c.id} className={`transition-colors cursor-pointer ${selected.includes(c.id) ? 'bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`} onClick={() => navigate(`/campaigns/${c.id}`)}>
-                  <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleSelect(c.id)} className="accent-[#FFA45C] w-4 h-4 cursor-pointer" />
-                  </td>
-                  <td className="px-4 py-4 font-medium text-gray-900 dark:text-white">{c.name}</td>
-                  <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.account}</td>
-                  <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.recipients.toLocaleString()}</td>
-                  <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.sent.toLocaleString()}</td>
-                  <td className="px-4 py-4">
-                    <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${c.status === 'Failed' ? 'bg-red-500' : c.status === 'Completed' ? 'bg-green-500' : 'bg-[#FFA45C]'}`} style={{ width: `${c.progress}%` }} />
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                      c.status === 'Sending' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                      c.status === 'Paused' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                      c.status === 'Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 
-                      c.status === 'Failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    }`}>{c.status}</span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <button onClick={(e) => handleDeleteSingle(e, c.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete Campaign">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+              {campaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No campaigns found. Click "+ Create" to start your first campaign.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                campaigns.map((c) => (
+                  <tr key={c.id} className={`transition-colors cursor-pointer ${selected.includes(c.id) ? 'bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`} onClick={() => navigate(`/campaigns/${c.id}`)}>
+                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleSelect(c.id)} className="accent-[#FFA45C] w-4 h-4 cursor-pointer" />
+                    </td>
+                    <td className="px-4 py-4 font-medium text-gray-900 dark:text-white">{c.name}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.account}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.recipients.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{c.sent.toLocaleString()}</td>
+                    <td className="px-4 py-4">
+                      <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${c.status === 'Failed' ? 'bg-red-500' : c.status === 'Completed' ? 'bg-green-500' : 'bg-[#FFA45C]'} transition-all duration-500`} style={{ width: `${c.progress}%` }} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                        c.status === 'Sending' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                        c.status === 'Paused' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                        c.status === 'Scheduled' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 
+                        c.status === 'Failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                      }`}>{c.status}</span>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button onClick={(e) => handleDeleteSingle(e, c.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete Campaign">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

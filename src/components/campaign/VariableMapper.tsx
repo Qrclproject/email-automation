@@ -8,13 +8,9 @@ export default function VariableMapper() {
     return <div className="p-8 text-center bg-orange-50 text-orange-800 rounded-xl border border-orange-100">Please go back to Step 1 and upload an Excel file.</div>;
   }
 
-  // 1. Get variables from the template (if one is attached)
-  const templateVars = selectedTemplate ? selectedTemplate.variables : [];
-
-  // 2. Scan the typed email body for any {{Variable}} or [Variable]
+  // Safe fallback for templateVars
+  const templateVars = selectedTemplate?.variables || [];
   const textMatches = emailBody.match(/(\{\{.*?\}\}|\[.*?\])/g) || [];
-  
-  // 3. Combine them and remove duplicates
   const allVars = Array.from(new Set([...templateVars, ...textMatches]));
   
   const qrVar = allVars.find(v => v.includes('QR'));
@@ -26,9 +22,7 @@ export default function VariableMapper() {
         <div className="mb-6">
           <h2 className="text-lg font-bold text-gray-900 mb-1">Map Variables to Excel Data</h2>
           <p className="text-sm text-gray-500">
-            {selectedTemplate 
-              ? `Template: ${selectedTemplate.name}` 
-              : 'No template attached. Mapping text variables only.'}
+            {selectedTemplate ? `Template attached: ${selectedTemplate.name}` : 'No template attached. Mapping text variables only.'}
           </p>
         </div>
 
@@ -42,7 +36,7 @@ export default function VariableMapper() {
               <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 border-b border-gray-100 pb-2"><Type className="w-4 h-4" /> Text Overlays</h3>
               
               {textVars.length === 0 && (
-                 <p className="text-sm text-gray-500">No text variables found.</p>
+                 <p className="text-sm text-gray-500">No text variables found. Add placeholders like <code>[Recipient Name]</code> to your email body to map them.</p>
               )}
 
               {textVars.map((variable) => (

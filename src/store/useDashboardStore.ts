@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from '../services/api';
 
 export interface CampaignStats {
   id: string;
@@ -16,24 +17,52 @@ export interface CampaignStats {
 
 interface DashboardState {
   campaigns: CampaignStats[];
-  deleteCampaign: (id: string) => void; // <-- Add this
-  deleteMultipleCampaigns: (ids: string[]) => void; // <-- Add this
+  fetchCampaigns: () => Promise<void>;
+  deleteCampaign: (id: string) => Promise<void>;
+  deleteMultipleCampaigns: (ids: string[]) => Promise<void>;
 }
 
-export const useDashboardStore = create<DashboardState>((set) => ({
-  campaigns: [
-    { id: '1', name: 'Summit 10.0 – VIP invites', account: 'events@qrcodeng.com', recipients: 1204, sent: 746, delivered: 740, failed: 4, bounced: 2, progress: 62, status: 'Sending', date: 'Today' },
-    { id: '2', name: 'Gala night reminder', account: 'events@qrcodeng.com', recipients: 860, sent: 267, delivered: 260, failed: 5, bounced: 2, progress: 31, status: 'Paused', date: 'Today' },
-    { id: '3', name: 'Wedding – Adeyemi', account: 'invitations@qrcodeng.com', recipients: 320, sent: 0, delivered: 0, failed: 0, bounced: 0, progress: 0, status: 'Scheduled', date: 'Fri 09:00' },
-    { id: '4', name: 'Conference 2026', account: 'registration@qrcodeng.com', recipients: 2400, sent: 2400, delivered: 2380, failed: 12, bounced: 8, progress: 100, status: 'Completed', date: 'Yesterday' },
-  ],
+export const useDashboardStore = create<DashboardState>((set, get) => ({
+  campaigns: [],
   
-  // Add the delete functions
-  deleteCampaign: (id) => set((state) => ({
-    campaigns: state.campaigns.filter((c) => c.id !== id)
-  })),
+  fetchCampaigns: async () => {
+    try {
+      const response = await api.get('/campaigns');
+      // Map MongoDB Campaign model to frontend CampaignStats
+      const mapped = response.data.map((c: any) => ({
+        id: c._id,
+        name: c.name,
+        account: c.senderAccount,
+        recipients: c.recipients?.length || 0,
+        sent: c.sentCount || 0,
+        delivered: c.deliveredCount || 0,
+        failed: c.failedCount || 0,
+        bounced: c.bouncedCount || 0,
+        progress: c.progress || 0,
+        status: c.status || 'Draft',
+        date: new Date(c.createdAt).toLocaleDateString()
+      }));
+      set({ campaigns: mapped });
+    } catch (error) {
+      console.error('Failed to fetch campaigns', error);
+    }
+  },
+
+  deleteCampaign: async (id) => {
+    try {
+      await api.delete(`/campaigns/${id}`);
+      set((state) => ({ campaigns: state.campaigns.filter((c) => c.id !== id) }));
+    } catch (error) {
+      console.error('Failed to delete campaign', error);
+    }
+  },
   
-  deleteMultipleCampaigns: (ids) => set((state) => ({
-    campaigns: state.campaigns.filter((c) => !ids.includes(c.id))
-  })),
+  deleteMultipleCampaigns: async (ids) => {
+    try {
+      await Promise.all(ids.map(id => api.delete(`/campaigns/${id}`)));
+      set((state) => ({ campaigns: state.campaigns.filter((c) => !ids.includes(c.id)) }));
+    } catch (error) {
+      console.error('Failed to delete campaigns', error);
+    }
+  },
 }));

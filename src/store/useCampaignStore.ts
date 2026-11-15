@@ -1,16 +1,15 @@
 import { create } from 'zustand';
 
 export interface Template {
-  id: string;
+  _id: string;
   name: string;
-  variables: string[]; 
-  previewBg: string;
+  imageUrl: string;
+  qrPosition?: any;
+  qrPadding?: number;
+  qrConfig?: any;
+  textOverlays?: any[];
+  variables?: string[]; 
 }
-
-export const AVAILABLE_TEMPLATES: Template[] = [
-  { id: 'tpl_1', name: 'Summit 10.0 VIP Invitation', variables: ['{{Full Name}}', '{{Ticket Type}}', 'QR_CODE'], previewBg: 'linear-gradient(160deg,#4f46e5,#c084fc)' },
-  { id: 'tpl_2', name: 'Gala Night Reminder', variables: ['{{Full Name}}', '{{Table Number}}'], previewBg: 'linear-gradient(160deg,#be123c,#fb923c)' },
-];
 
 export const SAMPLE_BUSYBEE_EMAIL = `
   <p style="text-align: center;"><img src="https://placehold.co/200x60/ffffff/3b82f6?text=BUSYBEE+LOGO" alt="BusyBee Logo" style="max-width: 200px;" /></p>
@@ -80,7 +79,7 @@ export interface CampaignState {
 export const useCampaignStore = create<CampaignState>((set) => ({
   step: 1,
   subject: "You're invited to Summit 10.0!",
-  senderAccount: 'events@qrcodeng.com',
+  senderAccount: '',
   selectedTemplate: null,
   variableMappings: {},
   
@@ -93,7 +92,7 @@ export const useCampaignStore = create<CampaignState>((set) => ({
   
   setStep: (step) => set({ step }),
   updateField: (field, value) => set({ [field]: value }),
-  setTemplate: (template) => set({ selectedTemplate: template, variableMappings: {} }), 
+  setTemplate: (template) => set({ selectedTemplate: template }), 
   setMapping: (variable, column) => set((state) => ({
     variableMappings: { ...state.variableMappings, [variable]: column }
   })),
@@ -163,9 +162,14 @@ export const useCampaignStore = create<CampaignState>((set) => ({
   removeAttachment: (index) => set((state) => ({ attachments: state.attachments.filter((_, i) => i !== index) })),
   
   resetCampaign: () => set({ 
-    step: 1, subject: "You're invited to Summit 10.0!", 
-    excelColumns: [], excelData: [], fileName: null,
-    selectedTemplate: null, variableMappings: {}, 
+    step: 1, 
+    subject: "You're invited to Summit 10.0!", 
+    senderAccount: '',
+    excelColumns: [], 
+    excelData: [], 
+    fileName: null,
+    selectedTemplate: null, 
+    variableMappings: {}, 
     emailBody: '<p>Hi [Recipient Name],</p><p>You are cordially invited. Please find your personalized invitation below.</p><p><br></p><p>Best regards,<br>QRCODENG Team</p>', 
     attachments: [] 
   })

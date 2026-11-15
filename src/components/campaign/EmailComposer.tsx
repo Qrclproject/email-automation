@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { useCampaignStore, AVAILABLE_TEMPLATES, SAMPLE_BUSYBEE_EMAIL } from '../../store/useCampaignStore';
+import { useCampaignStore, SAMPLE_BUSYBEE_EMAIL } from '../../store/useCampaignStore';
 import { useAccountStore } from '../../store/useAccountStore';
+import { getDesigns } from '../../services/designService'; // Import the API
 import { Paperclip, Trash2, LayoutTemplate, BoxSelect, FileText, AlertCircle } from 'lucide-react';
 
 export default function EmailComposer() {
@@ -11,10 +12,38 @@ export default function EmailComposer() {
     emailBody, setEmailBody, attachments, addAttachment, removeAttachment 
   } = useCampaignStore();
   
-  const { accounts } = useAccountStore();
+  const { accounts, fetchAccounts } = useAccountStore();
+  
+  // State to hold real designs from MongoDB
+  const [designs, setDesigns] = useState<any[]>([]);
+
+  // 1. Fetch Accounts and Designs on load
+  useEffect(() => {
+    fetchAccounts();
+    
+    const fetchSavedDesigns = async () => {
+      try {
+        const res = await getDesigns();
+        // The backend returns { data: [...] }
+        setDesigns(res.data.data || []);
+      } catch (error) {
+        console.error("Failed to load designs", error);
+      }
+    };
+    fetchSavedDesigns();
+  }, [fetchAccounts]);
+
+  // 2. Filter for eligible accounts
   const availableAccounts = accounts.filter(
     (acc) => acc.status === 'connected' && acc.permissions.send
   );
+
+  // 3. Auto-select the first valid account
+  useEffect(() => {
+    if (availableAccounts.length > 0 && !availableAccounts.find(a => a.email === senderAccount)) {
+      updateField('senderAccount', availableAccounts[0].email);
+    }
+  }, [availableAccounts, senderAccount, updateField]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quillRef = useRef<ReactQuill>(null);
@@ -35,22 +64,30 @@ export default function EmailComposer() {
     }
   };
 
-  const handleInsertTemplate = (tplId: string) => {
-    const tpl = AVAILABLE_TEMPLATES.find(t => t.id === tplId);
-    if (!tpl) return;
-    setTemplate(tpl);
+  // 4. Updated Template Insertion Logic
+  const handleInsertTemplate = (designId: string) => {
+    if (!designId) {
+      setTemplate(null);
+      return;
+    }
+
+    const design = designs.find(d => d._id === designId);
+    if (!design) return;
+
+    // Save to store so the Preview and Backend know a template is used
+    setTemplate(design);
     
-    const placeholderHtml = `
-      <p>
+    // Insert the actual image into the Quill Editor
+    const imageHtml = `
+      <p style="text-align: center;">
         <img 
-          src="https://via.placeholder.com/600x200/f3f4f6/4b5563?text=Design+Template+Attached" 
-          data-template-id="${tpl.id}" 
-          alt="Template Placeholder" 
-          style="width: 100%; max-width: 400px; display: block; margin: 20px auto; border-radius: 8px; border: 2px dashed #d1d5db;" 
+          src="${design.imageUrl}" 
+          alt="${design.name}" 
+          style="width: 100%; max-width: 600px; display: block; margin: 0 auto;" 
         />
       </p><p><br></p>
     `;
-    insertHtmlAtCursor(placeholderHtml);
+    insertHtmlAtCursor(imageHtml);
   };
 
   const handleInsertCallout = () => {
@@ -117,7 +154,11 @@ export default function EmailComposer() {
                   <span>No eligible accounts found.</span>
                 </div>
               ) : (
-                <select value={senderAccount} onChange={(e) => updateField('senderAccount', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 text-sm focus:ring-[#FFA45C]">
+                <select 
+                  value={senderAccount} 
+                  onChange={(e) => updateField('senderAccount', e.target.value)} 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 text-sm focus:ring-[#FFA45C]"
+                >
                   {availableAccounts.map((acc) => (
                     <option key={acc.id} value={acc.email}>{acc.email} ({acc.sentToday}/{acc.dailyLimit} used)</option>
                   ))}
@@ -132,9 +173,11 @@ export default function EmailComposer() {
           
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Design Template</label>
-            <select onChange={(e) => handleInsertTemplate(e.target.value)} value={selectedTemplate?.id || ''} className="w-full text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 focus:ring-[#FFA45C]">
+            <select onChange={(e) => handleInsertTemplate(e.target.value)} value={selectedTemplate?._id || ''} className="w-full text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 focus:ring-[#FFA45C]">
               <option value="">-- Insert Template --</option>
-              {AVAILABLE_TEMPLATES.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
+              {designs.map(d => (
+                <option key={d._id} value={d._id}>{d.name}</option>
+              ))}
             </select>
           </div>
 

@@ -9,18 +9,19 @@ export default function Login() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email);
-    navigate('/dashboard');
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Login failed. Please check your credentials.');
+    }
   };
 
   return (
     <div className="min-h-screen flex p-4 md:p-6 bg-gray-50 dark:bg-gray-900 transition-colors">
-      
-      {/* Left Form Side */}
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 relative overflow-hidden">
-        {/* Subtle background decoration */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-[#FFA45C]"></div>
         
         <div className="w-full max-w-md p-8 md:p-12 relative z-10">
@@ -92,21 +93,14 @@ export default function Login() {
 
       {/* Right Hero Side */}
       <div className="hidden lg:flex flex-1 bg-[#0f172a] rounded-3xl ml-6 items-center justify-center relative overflow-hidden shadow-2xl">
-        {/* Abstract background elements */}
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#FFA45C] rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30"></div>
         
         <div className="relative z-10 p-16 w-full max-w-2xl flex flex-col items-center">
-          
-          {/* 3D Email Campaign Mockup */}
           <div className="relative w-80 md:w-96 h-[420px] mb-12 group perspective-1000">
-            {/* Glow behind the card */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
             
-            {/* The Floating Email Card */}
             <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 transform transition-transform duration-500 group-hover:rotate-0 group-hover:-translate-y-2 rotate-[4deg]">
-              
-              {/* Card Header (Gmail style) */}
               <div className="bg-gray-50 dark:bg-gray-900/50 p-6 border-b border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Q3 Product Update 🚀</h3>
                 <div className="flex items-center gap-3">
@@ -118,7 +112,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Card Body (Email content) */}
               <div className="p-6 flex-1 bg-white dark:bg-gray-800">
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                   Hi <span className="font-bold text-[#FFA45C]">{"{{First Name}}"}</span>,
@@ -129,11 +122,7 @@ export default function Login() {
                 
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex items-center gap-4">
                    <div className="bg-white p-1 rounded-md shadow-sm">
-                     <img 
-                       src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=QRCODENG&color=000000&bgcolor=ffffff" 
-                       alt="QR Code" 
-                       className="w-12 h-12" 
-                     />
+                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=QRCODENG&color=000000&bgcolor=ffffff" alt="QR Code" className="w-12 h-12" />
                    </div>
                    <div>
                      <p className="text-xs font-bold text-gray-900 dark:text-white">Your Access Pass</p>
@@ -146,7 +135,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Card Footer (Stats) */}
               <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
                 <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-xs font-bold">
                   <CheckCircle2 className="w-4 h-4" /> Delivered

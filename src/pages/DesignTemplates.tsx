@@ -5,13 +5,23 @@ import { Plus, Trash2, Edit, LayoutTemplate } from 'lucide-react';
 
 export default function DesignTemplates() {
   const [designs, setDesigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchDesigns = async () => {
-    const res = await getDesigns();
-    setDesigns(res.data.data);
+    try {
+      const res = await getDesigns();
+      // The backend returns { data: [...] }
+      setDesigns(res.data.data || res.data);
+    } catch (error) {
+      console.error('Failed to fetch designs', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchDesigns(); }, []);
+  useEffect(() => { 
+    fetchDesigns(); 
+  }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -20,6 +30,10 @@ export default function DesignTemplates() {
       fetchDesigns();
     }
   };
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading templates...</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto">

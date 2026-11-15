@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from '../services/api';
 
 export interface EmailAccount {
   id: string;
@@ -15,73 +16,68 @@ export interface EmailAccount {
 
 interface AccountState {
   accounts: EmailAccount[];
-  addAccount: (email: string, displayName: string) => void;
-  removeAccount: (id: string) => void;
-  reconnectAccount: (id: string) => void;
-  togglePermission: (id: string, permission: 'send' | 'readInbox') => void;
+  loading: boolean;
+  fetchAccounts: () => Promise<void>;
+  addAccount: (email: string, displayName: string) => Promise<void>;
+  removeAccount: (id: string) => Promise<void>;
+  togglePermission: (id: string, permission: 'send' | 'readInbox') => Promise<void>;
 }
 
-export const useAccountStore = create<AccountState>((set) => ({
-  accounts: [
-    {
-      id: '1',
-      email: 'events@qrcodeng.com',
-      displayName: 'QRCODENG Events',
+export const useAccountStore = create<AccountState>((set, get) => ({
+  accounts: [],
+  loading: false,
+  
+  fetchAccounts: async () => {
+    set({ loading: true });
+    try {
+      const response = await api.get('/accounts');
+      // Map MongoDB _id to frontend id
+      const mappedAccounts = response.data.map((acc: any) => ({
+        id: acc._id,
+        email: acc.email,
+        displayName: acc.displayName,
+        status: acc.status,
+        sentToday: acc.sentToday,
+        dailyLimit: acc.dailyLimit,
+        permissions: acc.permissions
+      }));
+      set({ accounts: mappedAccounts, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch accounts', error);
+      set({ loading: false });
+    }
+  },
+
+  addAccount: async (email, displayName) => {
+    // For now, manual addition just adds it as a mock connected account in the DB (OAuth is the real way)
+    const newAccount = {
+      email,
+      displayName,
+      refreshToken: 'mock_token_from_manual_add',
       status: 'connected',
-      sentToday: 350,
-      dailyLimit: 500,
-      permissions: { send: true, readInbox: true },
-    },
-    {
-      id: '2',
-      email: 'registration@qrcodeng.com',
-      displayName: 'QRCODENG Registration',
-      status: 'connected',
-      sentToday: 200,
-      dailyLimit: 500,
-      permissions: { send: true, readInbox: false },
-    },
-    {
-      id: '3',
-      email: 'invitations@qrcodeng.com',
-      displayName: 'QRCODENG Invites',
-      status: 'reconnect-needed',
       sentToday: 0,
       dailyLimit: 500,
-      permissions: { send: true, readInbox: false },
-    },
-  ],
-  
-  addAccount: (email, displayName) => set((state) => ({
-    accounts: [
-      ...state.accounts,
-      {
-        id: Date.now().toString(),
-        email,
-        displayName,
-        status: 'connected',
-        sentToday: 0,
-        dailyLimit: 500,
-        permissions: { send: true, readInbox: false },
-      },
-    ],
-  })),
+      permissions: { send: true, readInbox: false }
+    };
+    await api.post('/accounts/manual', newAccount); // Requires adding this route to backend later, or just use OAuth
+    get().fetchAccounts();
+  },
 
-  removeAccount: (id) => set((state) => ({
-    accounts: state.accounts.filter((acc) => acc.id !== id),
-  })),
+  removeAccount: async (id) => {
+    await api.delete(`/accounts/${id}`);
+    get().fetchAccounts();
+  },
 
-  reconnectAccount: (id) => set((state) => ({
-    accounts: state.accounts.map((acc) => 
-      acc.id === id ? { ...acc, status: 'connected' } : acc
-    ),
-  })),
-
-  togglePermission: (id, permission) => set((state) => ({
-    accounts: state.accounts.map((acc) => 
-      acc.id === id 
-        ? { ...acc, permissions: { ...acc.permissions, [permission]: !acc.permissions[permission] } } 
-        : acc
-    ),
-  })),
+  togglePermission: async (id, permission) => {
+    const account = get().accounts.find(a => a.id === id);
+    if (!account) return;
+    
+    const updatedPermissions = { 
+      ...account.permissions, 
+      [permission]: !account.permissions[permission] 
+    };
+    
+    await api.put(`/accounts/${id}`, { permissions: updatedPermissions });
+    get().fetchAccounts();
+  },
 }));
