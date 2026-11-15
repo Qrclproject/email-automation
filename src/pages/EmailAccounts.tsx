@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAccountStore } from '../store/useAccountStore';
-import { Trash2, RefreshCw, CheckCircle2, AlertCircle, Plus, X } from 'lucide-react';
+import { Trash2, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function EmailAccounts() {
