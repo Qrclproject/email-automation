@@ -22,7 +22,7 @@ interface DashboardState {
   deleteMultipleCampaigns: (ids: string[]) => Promise<void>;
 }
 
-export const useDashboardStore = create<DashboardState>((set, get) => ({
+export const useDashboardStore = create<DashboardState>((set) => ({
   campaigns: [],
   
   fetchCampaigns: async () => {
