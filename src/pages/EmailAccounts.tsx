@@ -5,7 +5,7 @@ import { api } from '../services/api';
 
 export default function EmailAccounts() {
   const { accounts, fetchAccounts, removeAccount, togglePermission } = useAccountStore();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+ 
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
