@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+// Updated to match the MongoDB Design schema
 export interface Template {
   _id: string;
   name: string;
@@ -7,10 +8,10 @@ export interface Template {
   qrPosition?: any;
   qrPadding?: number;
   qrConfig?: any;
+  qrDataField?: string; // <-- ADD THIS LINE
   textOverlays?: any[];
-  variables?: string[]; 
+  variables?: string[];
 }
-
 export const SAMPLE_BUSYBEE_EMAIL = `
   <p style="text-align: center;"><img src="https://placehold.co/200x60/ffffff/3b82f6?text=BUSYBEE+LOGO" alt="BusyBee Logo" style="max-width: 200px;" /></p>
   <hr />

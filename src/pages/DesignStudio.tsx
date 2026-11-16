@@ -5,7 +5,7 @@ import { createDesign, updateDesign, getDesignById } from '../services/designSer
 import QRCode from 'qrcode';
 import { 
   Plus, X, Maximize, Minimize, SlidersHorizontal, 
-  Eye, EyeOff, Check, Trash2, Image as ImageIcon, Move
+  Eye, EyeOff, Check, Trash2, Image as ImageIcon, Move, AlignCenter, Grid
 } from 'lucide-react';
 
 // ─── Shape drawing helpers ──
@@ -121,14 +121,18 @@ export default function DesignStudio() {
   const [qrPosition, setQrPosition] = useState({ x: 125, y: 300, width: 150, height: 150 });
   const [qrPadding, setQrPadding] = useState(15);
   const [qrConfig, setQrConfig] = useState({ lightColor: '#ffffff', finderOuterColor: '#000000', finderOuterShape: 'square', finderInnerColor: '#000000', finderInnerShape: 'square', dataColor: '#000000', dataShape: 'square' });
+  
+  // NEW: QR Data Field State
+  const [qrDataField, setQrDataField] = useState('{{Email Address}}');
+  
   const [textOverlays, setTextOverlays] = useState<any[]>([]);
-  const [qrDataFields, setQrDataFields] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [selectedOverlayIndex, setSelectedOverlayIndex] = useState<number | null>(null);
   
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [showControlsOverlay, setShowControlsOverlay] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [fullscreenPreviewUrl, setFullscreenPreviewUrl] = useState('');
@@ -143,7 +147,8 @@ export default function DesignStudio() {
         const data = res.data.data;
         if (data) {
           setDesignName(data.name); setImagePreview(data.imageUrl); setQrPosition(data.qrPosition || { x: 125, y: 300, width: 150, height: 150 });
-          setQrPadding(data.qrPadding || 15); if (data.qrConfig) setQrConfig(data.qrConfig); if (data.textOverlays) setTextOverlays(data.textOverlays); if (data.qrDataFields) setQrDataFields(data.qrDataFields);
+          setQrPadding(data.qrPadding || 15); if (data.qrConfig) setQrConfig(data.qrConfig); if (data.textOverlays) setTextOverlays(data.textOverlays);
+          if (data.qrDataField) setQrDataField(data.qrDataField); 
         }
       });
     }
@@ -161,17 +166,7 @@ export default function DesignStudio() {
       id: `ov_${Date.now()}`, 
       placeholder: 'Type here...', 
       position: { x: 50, y: 50, width: 200, height: 50 }, 
-      style: { 
-        fontSize: 24, 
-        color: '#000000', 
-        bold: true, 
-        italic: false, 
-        underline: false, 
-        alignment: 'center', 
-        fontFamily: 'Montserrat', // Default to Montserrat
-        textTransform: 'none', 
-        lineHeight: 1.4 
-      } 
+      style: { fontSize: 24, color: '#000000', bold: true, italic: false, underline: false, alignment: 'center', fontFamily: 'Montserrat', textTransform: 'none', lineHeight: 1.4 } 
     };
     setTextOverlays(prev => [...prev, newOverlay]); 
     setSelectedOverlayIndex(textOverlays.length);
@@ -194,6 +189,18 @@ export default function DesignStudio() {
     setTextOverlays(newOv);
   };
 
+  const centerElement = (type: 'qr' | 'text', index?: number) => {
+    const canvasWidth = imgRef.current?.getBoundingClientRect().width || 400;
+    if (type === 'qr') {
+      const newX = (canvasWidth - qrPosition.width) / 2;
+      setQrPosition({ ...qrPosition, x: newX });
+    } else if (type === 'text' && index !== undefined) {
+      const newOv = [...textOverlays];
+      newOv[index].position.x = (canvasWidth - newOv[index].position.width) / 2;
+      setTextOverlays(newOv);
+    }
+  };
+
   const handleSave = async () => {
     if (!designName.trim()) return alert('Please provide a design name.');
     setSaving(true);
@@ -209,7 +216,7 @@ export default function DesignStudio() {
         qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY }, 
         qrPadding, 
         qrConfig, 
-        qrDataFields, 
+        qrDataField, // Save the selected QR field
         textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) 
       };
       
@@ -249,20 +256,8 @@ export default function DesignStudio() {
   }, [showPreview, imagePreview, naturalSize, qrPosition, qrPadding, qrConfig, textOverlays]);
 
   const shapeOptions = ['square', 'rounded', 'circle', 'diamond', 'star', 'triangle'];
-const fontOptions = [
-  'Montserrat', 
-  'Inter', 
-  'Playfair Display', 
-  'Roboto',
-  'Lora',
-  'Oswald',
-  'Dancing Script',
-  'Cinzel',
-  'Arial', 
-  'Georgia', 
-  'Courier New',
-  'Times New Roman'
-];
+  const fontOptions = ['Montserrat', 'Inter', 'Playfair Display', 'Roboto', 'Lora', 'Oswald', 'Dancing Script', 'Cinzel', 'Arial', 'Georgia', 'Courier New', 'Times New Roman'];
+
   return (
     <div className={`bg-white dark:bg-gray-900 flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]'}`}>
       
@@ -271,12 +266,15 @@ const fontOptions = [
         <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">{editId ? 'Edit Design' : 'Create Design'}</h1>
         
         <div className="flex items-center justify-between w-full md:w-auto gap-2">
+           <button onClick={() => setShowGrid(!showGrid)} className={`flex-1 md:flex-none text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${showGrid ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>
+             <Grid className="w-4 h-4"/> Grid
+           </button>
            <button onClick={() => setShowControlsOverlay(!showControlsOverlay)} className="md:hidden flex-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
-             <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
+             <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide' : 'Controls'}
            </button>
            <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="flex-1 md:flex-none text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
              {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
-             {isEditorFullscreen ? 'Exit Full' : 'Fullscreen'}
+             {isEditorFullscreen ? 'Exit' : 'Fullscreen'}
            </button>
         </div>
       </div>
@@ -309,7 +307,23 @@ const fontOptions = [
               <hr className="border-gray-100 dark:border-gray-700" />
               
               <div>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">QR Code Styling</h4>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">QR Code Styling</h4>
+                  <button onClick={() => centerElement('qr')} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium bg-blue-50 px-2 py-1 rounded"><AlignCenter className="w-3 h-3"/> Center</button>
+                </div>
+
+                {/* NEW: Dynamic Data to Encode */}
+                <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <label className="text-xs font-bold text-gray-900 dark:text-white mb-1 block">Dynamic Data to Encode</label>
+                  <select value={qrDataField} onChange={(e) => setQrDataField(e.target.value)} className="w-full border border-orange-300 dark:border-orange-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded p-2 text-sm font-medium focus:ring-[#FFA45C]">
+                    <option value="{{Email Address}}">Email Address (Recommended)</option>
+                    <option value="{{Full Name}}">Full Name</option>
+                    <option value="{{Ticket ID}}">Ticket ID</option>
+                    <option value="https://qrcodeng.com">Static Link (Same for everyone)</option>
+                  </select>
+                  <p className="text-[10px] text-gray-500 mt-2">This is the data that will be scanned at the door.</p>
+                </div>
+
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Background Color</label>
@@ -353,12 +367,12 @@ const fontOptions = [
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-900 dark:text-white truncate pr-2">{ov.placeholder || 'Text Overlay'}</span>
                         <div className="flex gap-2 shrink-0">
+                          <button onClick={() => centerElement('text', idx)} className="text-blue-600 hover:text-blue-800" title="Center Horizontally"><AlignCenter className="w-3 h-3"/></button>
                           <button onClick={() => setSelectedOverlayIndex(idx === selectedOverlayIndex ? null : idx)} className="text-xs text-orange-600 dark:text-orange-400 hover:underline">{selectedOverlayIndex === idx ? 'Close' : 'Edit'}</button>
                           <button onClick={() => deleteOverlay(idx)} className="text-xs text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3"/></button>
                         </div>
                       </div>
                       
-                      {/* ADVANCED STYLING PANEL */}
                       {selectedOverlayIndex === idx && (
                         <div className="mt-3 space-y-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                           <div>
@@ -374,23 +388,28 @@ const fontOptions = [
                               </select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-medium text-gray-500">Font Size ({ov.style.fontSize}px)</label>
-                              <input type="range" min="10" max="80" value={ov.style.fontSize} onChange={(e) => updateOverlayStyle(idx, 'fontSize', Number(e.target.value))} className="w-full accent-[#FFA45C] mt-2" />
+                              <label className="text-[10px] font-medium text-gray-500">Color</label>
+                              <input type="color" value={ov.style.color} onChange={(e) => updateOverlayStyle(idx, 'color', e.target.value)} className="w-full h-7 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] font-medium text-gray-500">Color</label>
-                              <input type="color" value={ov.style.color} onChange={(e) => updateOverlayStyle(idx, 'color', e.target.value)} className="w-full h-8 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-500 flex justify-between mb-1">
+                              <span>Font Size</span>
+                              <span>{ov.style.fontSize}px</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input type="range" min="8" max="120" value={ov.style.fontSize} onChange={(e) => updateOverlayStyle(idx, 'fontSize', Number(e.target.value))} className="flex-1 accent-[#FFA45C]" />
+                              <input type="number" min="8" max="120" value={ov.style.fontSize} onChange={(e) => updateOverlayStyle(idx, 'fontSize', Number(e.target.value))} className="w-14 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-1 py-1 text-xs text-center" />
                             </div>
-                            <div>
-                              <label className="text-[10px] font-medium text-gray-500">Alignment</label>
-                              <select value={ov.style.alignment} onChange={(e) => updateOverlayStyle(idx, 'alignment', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs">
-                                <option value="left">Left</option>
-                                <option value="center">Center</option>
-                                <option value="right">Right</option>
-                              </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-500">Alignment</label>
+                            <div className="flex gap-1 mt-1">
+                              <button onClick={() => updateOverlayStyle(idx, 'alignment', 'left')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'left' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Left</button>
+                              <button onClick={() => updateOverlayStyle(idx, 'alignment', 'center')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'center' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Center</button>
+                              <button onClick={() => updateOverlayStyle(idx, 'alignment', 'right')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'right' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Right</button>
                             </div>
                           </div>
 
@@ -424,17 +443,34 @@ const fontOptions = [
               aspectRatio: imagePreview ? 'auto' : '400/560',
             }}
           >
+            {/* Grid Overlay */}
+            {showGrid && (
+              <div className="absolute inset-0 z-0 pointer-events-none" style={{
+                backgroundImage: 'linear-gradient(to right, rgba(150,150,150,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(150,150,150,0.2) 1px, transparent 1px)',
+                backgroundSize: '20px 20px'
+              }}></div>
+            )}
+
             {imagePreview ? (
-              <img ref={imgRef} src={imagePreview} alt="template" className="max-h-[70vh] md:max-h-[75vh] max-w-full object-contain block" onLoad={(e) => setNaturalSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />
+              <img ref={imgRef} src={imagePreview} alt="template" className="max-h-[70vh] md:max-h-[75vh] max-w-full object-contain block relative z-10" onLoad={(e) => setNaturalSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />
             ) : (
-              <div className="w-full h-full bg-white dark:bg-gray-800 flex items-center justify-center flex-col text-gray-300 dark:text-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="w-full h-full bg-white dark:bg-gray-800 flex items-center justify-center flex-col text-gray-300 dark:text-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg relative z-10">
                 <ImageIcon className="w-12 h-12 md:w-16 md:h-16 mb-3 opacity-20" />
                 <span className="text-xs md:text-sm opacity-40 font-medium">Blank Canvas</span>
               </div>
             )}
             
             {/* QR Position Box */}
-            <Rnd size={{ width: qrPosition.width, height: qrPosition.height }} position={{ x: qrPosition.x, y: qrPosition.y }} onDragStop={(_e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })} onResizeStop={(_e, _dir, ref, _delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })} bounds="parent" className="border-2 border-dashed border-[#FFA45C] bg-white group shadow-sm z-10">
+            <Rnd 
+              size={{ width: qrPosition.width, height: qrPosition.height }} 
+              position={{ x: qrPosition.x, y: qrPosition.y }} 
+              onDragStop={(_e, d) => setQrPosition({ ...qrPosition, x: d.x, y: d.y })} 
+              onResizeStop={(_e, _dir, ref, _delta, pos) => setQrPosition({ x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) })} 
+              bounds="parent" 
+              dragGrid={[5, 5]}
+              resizeGrid={[5, 5]}
+              className="border-2 border-dashed border-[#FFA45C] bg-white group shadow-sm z-20"
+            >
               <div className="w-full h-full relative overflow-hidden">
                 <QRPreviewBox config={qrConfig} padding={qrPadding} />
                 <div className="absolute inset-0 bg-[#FFA45C]/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
@@ -452,7 +488,9 @@ const fontOptions = [
                 onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }} 
                 onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }} 
                 bounds="parent" 
-                className={`border border-dashed flex items-center justify-center z-10 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
+                dragGrid={[5, 5]}
+                resizeGrid={[5, 5]}
+                className={`border border-dashed flex items-center justify-center z-20 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
               >
                 {/* ACTUAL TEXT RENDERING WITH STYLES */}
                 <div 

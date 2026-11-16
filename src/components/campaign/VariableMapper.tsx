@@ -13,8 +13,15 @@ export default function VariableMapper() {
   const textMatches = emailBody.match(/(\{\{.*?\}\}|\[.*?\])/g) || [];
   const allVars = Array.from(new Set([...templateVars, ...textMatches]));
   
-  const qrVar = allVars.find(v => v.includes('QR'));
-  const textVars = allVars.filter(v => !v.includes('QR'));
+  // NEW: Check if the template has a specific QR data field
+  const qrField = selectedTemplate?.qrDataField;
+  
+  // We want the QR var to be whatever is in the template's qrDataField. 
+  // Fallback to looking for "QR" in the variables.
+  const qrVar = qrField || allVars.find(v => v.includes('QR'));
+  
+  // Filter out the qrVar from the textVars so it doesn't show up twice
+  const textVars = allVars.filter(v => v !== qrVar);
 
   return (
     <div className="space-y-6">
@@ -26,7 +33,7 @@ export default function VariableMapper() {
           </p>
         </div>
 
-        {allVars.length === 0 ? (
+        {allVars.length === 0 && !qrVar ? (
           <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-gray-500 dark:text-gray-400 text-sm">No dynamic variables found in your email body or template. You can proceed to the next step.</p>
           </div>
@@ -45,7 +52,6 @@ export default function VariableMapper() {
                 <div key={variable} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg gap-3 border border-gray-100 dark:border-gray-600">
                   <span className="font-mono text-sm text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded w-fit break-all">{variable}</span>
                   
-                  {/* FIXED SELECT STYLING HERE */}
                   <select 
                     className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded p-2 text-sm flex-1 max-w-xs focus:ring-2 focus:ring-[#FFA45C] outline-none transition-colors cursor-pointer" 
                     value={variableMappings[variable] || ''} 
@@ -68,10 +74,9 @@ export default function VariableMapper() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg gap-3">
                   <div>
                     <span className="font-semibold text-sm text-gray-900 dark:text-white block">QR Destination Data</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">What data should be encoded inside the QR code?</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Map the data that will be encoded inside the QR code.</span>
                   </div>
                   
-                  {/* FIXED SELECT STYLING HERE */}
                   <select 
                     className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded p-2 text-sm flex-1 max-w-xs focus:ring-2 focus:ring-[#FFA45C] outline-none transition-colors cursor-pointer" 
                     value={variableMappings[qrVar] || ''} 
