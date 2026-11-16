@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Mail, FileImage, Paintbrush, AtSign, Settings, Users, X } from 'lucide-react';
+import { LayoutDashboard, Mail, FileImage, Paintbrush, AtSign, Settings, Users, X, QrCode } from 'lucide-react';
 
 const mainNav = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Campaigns', path: '/campaigns', icon: Mail },
+  { name: 'Event Check-in', path: '/checkin', icon: QrCode }, // Added here
   { name: 'Design Templates', path: '/templates', icon: FileImage },
   { name: 'Design Studio', path: '/studio', icon: Paintbrush },
   { name: 'Email Accounts', path: '/accounts', icon: AtSign },
@@ -17,28 +18,18 @@ const toolNav = [
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   return (
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">
-      
-      {/* HEADER SECTION UPDATED */}
       <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex flex-col gap-2">
-          {/* Logo wrapped in white background for dark mode visibility */}
           <div className="bg-white rounded-lg p-1.5 inline-block shadow-sm w-fit">
-            <img 
-              src="/logo.png" 
-              alt="QRCODE.NG Logo" 
-              className="h-8 w-auto object-contain" 
-            />
+            <img src="/logo.png" alt="QRCODE.NG Logo" className="h-8 w-auto object-contain" />
           </div>
           <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Email Automation</p>
         </div>
-        
-        {/* Mobile Close Button */}
         <button onClick={onClose} className="md:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400">
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* NAVIGATION LINKS */}
       <div className="flex-1 overflow-y-auto py-4">
         <div className="px-4 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Main Menu</div>
         <nav className="space-y-1 px-2 mb-6">

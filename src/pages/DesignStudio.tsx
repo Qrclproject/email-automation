@@ -157,11 +157,42 @@ export default function DesignStudio() {
   const handleQrConfigChange = (key: string, value: string) => { setQrConfig(prev => ({ ...prev, [key]: value })); };
 
   const addTextOverlay = () => {
-    const newOverlay = { id: `ov_${Date.now()}`, placeholder: '1', position: { x: 50, y: 50, width: 200, height: 40 }, style: { fontSize: 16, color: '#000000', bold: false, italic: false, underline: false, alignment: 'left', fontFamily: 'Arial', textTransform: 'none', lineHeight: 1.4 } };
-    setTextOverlays(prev => [...prev, newOverlay]); setSelectedOverlayIndex(textOverlays.length);
+    const newOverlay = { 
+      id: `ov_${Date.now()}`, 
+      placeholder: 'Type here...', 
+      position: { x: 50, y: 50, width: 200, height: 50 }, 
+      style: { 
+        fontSize: 24, 
+        color: '#000000', 
+        bold: true, 
+        italic: false, 
+        underline: false, 
+        alignment: 'center', 
+        fontFamily: 'Montserrat', // Default to Montserrat
+        textTransform: 'none', 
+        lineHeight: 1.4 
+      } 
+    };
+    setTextOverlays(prev => [...prev, newOverlay]); 
+    setSelectedOverlayIndex(textOverlays.length);
   };
 
-  const deleteOverlay = (index: number) => { setTextOverlays(prev => prev.filter((_, i) => i !== index)); setSelectedOverlayIndex(null); };
+  const deleteOverlay = (index: number) => { 
+    setTextOverlays(prev => prev.filter((_, i) => i !== index)); 
+    setSelectedOverlayIndex(null); 
+  };
+
+  const updateOverlayStyle = (index: number, key: string, value: any) => {
+    const newOv = [...textOverlays];
+    newOv[index].style[key] = value;
+    setTextOverlays(newOv);
+  };
+
+  const updateOverlayText = (index: number, text: string) => {
+    const newOv = [...textOverlays];
+    newOv[index].placeholder = text;
+    setTextOverlays(newOv);
+  };
 
   const handleSave = async () => {
     if (!designName.trim()) return alert('Please provide a design name.');
@@ -218,7 +249,20 @@ export default function DesignStudio() {
   }, [showPreview, imagePreview, naturalSize, qrPosition, qrPadding, qrConfig, textOverlays]);
 
   const shapeOptions = ['square', 'rounded', 'circle', 'diamond', 'star', 'triangle'];
-
+const fontOptions = [
+  'Montserrat', 
+  'Inter', 
+  'Playfair Display', 
+  'Roboto',
+  'Lora',
+  'Oswald',
+  'Dancing Script',
+  'Cinzel',
+  'Arial', 
+  'Georgia', 
+  'Courier New',
+  'Times New Roman'
+];
   return (
     <div className={`bg-white dark:bg-gray-900 flex flex-col transition-all ${isEditorFullscreen ? 'fixed inset-0 z-50 h-screen' : '-m-4 md:-m-8 h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]'}`}>
       
@@ -227,13 +271,9 @@ export default function DesignStudio() {
         <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden md:block">{editId ? 'Edit Design' : 'Create Design'}</h1>
         
         <div className="flex items-center justify-between w-full md:w-auto gap-2">
-           <button 
-             onClick={() => setShowControlsOverlay(!showControlsOverlay)} 
-             className="md:hidden flex-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium"
-           >
+           <button onClick={() => setShowControlsOverlay(!showControlsOverlay)} className="md:hidden flex-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
              <SlidersHorizontal className="w-4 h-4"/> {showControlsOverlay ? 'Hide Controls' : 'Show Controls'}
            </button>
-
            <button onClick={() => setIsEditorFullscreen(!isEditorFullscreen)} className="flex-1 md:flex-none text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg flex items-center justify-center gap-2 font-medium">
              {isEditorFullscreen ? <Minimize className="w-4 h-4"/> : <Maximize className="w-4 h-4"/>}
              {isEditorFullscreen ? 'Exit Full' : 'Fullscreen'}
@@ -265,7 +305,9 @@ export default function DesignStudio() {
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 block">Upload Image</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 dark:file:bg-orange-900/30 dark:file:text-orange-400 hover:file:bg-orange-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-1 text-gray-900 dark:text-white transition-colors" />
               </div>
+              
               <hr className="border-gray-100 dark:border-gray-700" />
+              
               <div>
                 <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">QR Code Styling</h4>
                 <div className="space-y-3">
@@ -296,33 +338,75 @@ export default function DesignStudio() {
                   </div>
                 </div>
               </div>
+              
               <hr className="border-gray-100 dark:border-gray-700" />
+              
+              {/* TEXT OVERLAYS SECTION */}
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white">Text Overlays</h4>
                   <button onClick={addTextOverlay} className="text-xs bg-[#FFA45C] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-orange-400 flex items-center gap-1"><Plus className="w-3 h-3"/> Add</button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {textOverlays.map((ov, idx) => (
-                    <div key={ov.id} className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div key={ov.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-900 dark:text-white">Overlay {idx + 1}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => setSelectedOverlayIndex(idx === selectedOverlayIndex ? null : idx)} className="text-xs text-orange-600 dark:text-orange-400 hover:underline">{selectedOverlayIndex === idx ? 'Hide' : 'Edit'}</button>
+                        <span className="text-xs font-bold text-gray-900 dark:text-white truncate pr-2">{ov.placeholder || 'Text Overlay'}</span>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={() => setSelectedOverlayIndex(idx === selectedOverlayIndex ? null : idx)} className="text-xs text-orange-600 dark:text-orange-400 hover:underline">{selectedOverlayIndex === idx ? 'Close' : 'Edit'}</button>
                           <button onClick={() => deleteOverlay(idx)} className="text-xs text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3"/></button>
                         </div>
                       </div>
+                      
+                      {/* ADVANCED STYLING PANEL */}
                       {selectedOverlayIndex === idx && (
-                        <div className="mt-2 space-y-2">
-                          <input type="text" value={ov.placeholder} onChange={(e) => { const newOv = [...textOverlays]; newOv[idx].placeholder = e.target.value; setTextOverlays(newOv); }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Placeholder e.g., 1, name" />
-                          <input type="number" value={ov.style.fontSize} onChange={(e) => { const newOv = [...textOverlays]; newOv[idx].style.fontSize = Number(e.target.value); setTextOverlays(newOv); }} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Font Size" />
+                        <div className="mt-3 space-y-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-500">Text Content</label>
+                            <input type="text" value={ov.placeholder} onChange={(e) => updateOverlayText(idx, e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Type here..." />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-medium text-gray-500">Font Family</label>
+                              <select value={ov.style.fontFamily} onChange={(e) => updateOverlayStyle(idx, 'fontFamily', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs">
+                                {fontOptions.map(font => <option key={font} value={font}>{font}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-gray-500">Font Size ({ov.style.fontSize}px)</label>
+                              <input type="range" min="10" max="80" value={ov.style.fontSize} onChange={(e) => updateOverlayStyle(idx, 'fontSize', Number(e.target.value))} className="w-full accent-[#FFA45C] mt-2" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-medium text-gray-500">Color</label>
+                              <input type="color" value={ov.style.color} onChange={(e) => updateOverlayStyle(idx, 'color', e.target.value)} className="w-full h-8 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-gray-500">Alignment</label>
+                              <select value={ov.style.alignment} onChange={(e) => updateOverlayStyle(idx, 'alignment', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs">
+                                <option value="left">Left</option>
+                                <option value="center">Center</option>
+                                <option value="right">Right</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={() => updateOverlayStyle(idx, 'bold', !ov.style.bold)} className={`flex-1 py-1 text-xs font-bold rounded border ${ov.style.bold ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>B</button>
+                            <button onClick={() => updateOverlayStyle(idx, 'italic', !ov.style.italic)} className={`flex-1 py-1 text-xs italic rounded border ${ov.style.italic ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>I</button>
+                            <button onClick={() => updateOverlayStyle(idx, 'textTransform', ov.style.textTransform === 'uppercase' ? 'none' : 'uppercase')} className={`flex-1 py-1 text-xs rounded border ${ov.style.textTransform === 'uppercase' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>AA</button>
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-              <button onClick={() => setShowPreview(!showPreview)} className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center justify-center gap-2">
+
+              <button onClick={() => setShowPreview(!showPreview)} className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center justify-center gap-2 mt-6">
                 {showPreview ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>} {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
             </div>
@@ -361,19 +445,41 @@ export default function DesignStudio() {
 
             {/* Text Overlays */}
             {textOverlays.map((ov, idx) => (
-              <Rnd key={ov.id} size={{ width: ov.position.width, height: ov.position.height }} position={{ x: ov.position.x, y: ov.position.y }} onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }} onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }} bounds="parent" className="border border-dashed border-blue-500 bg-blue-500/10 flex items-center justify-center z-10">
-                <span className="text-blue-500 text-[10px] font-bold pointer-events-none">T{idx + 1}</span>
+              <Rnd 
+                key={ov.id} 
+                size={{ width: ov.position.width, height: ov.position.height }} 
+                position={{ x: ov.position.x, y: ov.position.y }} 
+                onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }} 
+                onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }} 
+                bounds="parent" 
+                className={`border border-dashed flex items-center justify-center z-10 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
+              >
+                {/* ACTUAL TEXT RENDERING WITH STYLES */}
+                <div 
+                  className="w-full h-full overflow-hidden flex pointer-events-none p-1"
+                  style={{
+                    fontSize: `${ov.style.fontSize}px`,
+                    color: ov.style.color,
+                    fontFamily: ov.style.fontFamily,
+                    fontWeight: ov.style.bold ? 'bold' : 'normal',
+                    fontStyle: ov.style.italic ? 'italic' : 'normal',
+                    textDecoration: ov.style.underline ? 'underline' : 'none',
+                    textTransform: ov.style.textTransform,
+                    textAlign: ov.style.alignment,
+                    lineHeight: ov.style.lineHeight,
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  <div className="w-full">{ov.placeholder}</div>
+                </div>
               </Rnd>
             ))}
           </div>
         </div>
 
-        {/* Floating Live Preview - MOVED HERE (Fixed to bottom right of screen) */}
+        {/* Floating Live Preview */}
         {showPreview && (
-          <div 
-            className="hidden md:block fixed bottom-24 right-8 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in hover:scale-105 transition-transform" 
-            onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}
-          >
+          <div className="hidden md:block fixed bottom-24 right-8 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in hover:scale-105 transition-transform" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
             <div className="flex items-center justify-between mb-1 px-1">
               <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Live Preview</span>
               <Maximize className="w-3 h-3 text-gray-400" />

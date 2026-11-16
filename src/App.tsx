@@ -11,6 +11,11 @@ import EmailAccounts from './pages/EmailAccounts';
 import CommandCenter from './pages/CommandCenter';
 import UsersRoles from './pages/UsersRoles';
 
+// Check-in Pages
+import CheckInHub from './pages/CheckIn/CheckInHub';
+import QRScanner from './pages/CheckIn/QRScanner';
+import CheckInList from './pages/CheckIn/CheckInList';
+
 // Auth Pages
 import Login from './pages/Auth/Login';
 import RequestAccess from './pages/Auth/RequestAccess';
@@ -31,6 +36,12 @@ function App() {
             <Route path="campaigns" element={<CampaignList />} />
             <Route path="campaigns/create" element={<CreateCampaign />} />
             <Route path="campaigns/:id" element={<CampaignDetails />} />
+            
+            {/* Check-in Routes */}
+            <Route path="checkin" element={<CheckInHub />} />
+            <Route path="checkin/:id/scan" element={<QRScanner />} />
+            <Route path="checkin/:id/list" element={<CheckInList />} />
+
             <Route path="templates" element={<DesignTemplates />} />
             <Route path="studio" element={<DesignStudio />} />
             <Route path="accounts" element={<EmailAccounts />} />
