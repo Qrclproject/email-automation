@@ -15,7 +15,17 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error("Login Error Details:", error);
+      
+      // Show a more descriptive error to help debug
+      let errorMsg = 'Login failed.';
+      if (error.message === 'Network Error') {
+        errorMsg = 'Network Error: Cannot reach the backend. Is the URL correct?';
+      } else if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      }
+      
+      alert(errorMsg);
     }
   };
 
@@ -25,21 +35,16 @@ export default function Login() {
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-[#FFA45C]"></div>
         
         <div className="w-full max-w-md p-8 md:p-12 relative z-10">
-                 <div className="flex justify-center mb-10">
+          <div className="flex justify-center mb-10">
             <div className="bg-white rounded-xl p-2 px-4 shadow-sm">
-              <img 
-                src="/logo.png" 
-                alt="QRCODE.NG Logo" 
-                className="h-14 w-auto object-contain" 
-              />
-            </div> 
+              <img src="/logo.png" alt="QRCODE.NG Logo" className="h-14 w-auto object-contain" />
+            </div>
           </div>
           
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-8">Sign in to manage your campaigns.</p>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* ... form inputs stay exactly the same ... */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work email</label>
               <div className="relative">
@@ -78,15 +83,12 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ... right hero side stays exactly the same ... */}
+      {/* Right Hero Side (Keep exactly as it was) */}
       <div className="hidden lg:flex flex-1 bg-[#0f172a] rounded-3xl ml-6 items-center justify-center relative overflow-hidden shadow-2xl">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#FFA45C] rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30"></div>
-        
-        <div className="relative z-10 p-16 w-full max-w-2xl flex flex-col items-center">
+         {/* ... The 3D email card stuff ... */}
+         <div className="relative z-10 p-16 w-full max-w-2xl flex flex-col items-center">
           <div className="relative w-80 md:w-96 h-[420px] mb-12 group perspective-1000">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
-            
             <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 transform transition-transform duration-500 group-hover:rotate-0 group-hover:-translate-y-2 rotate-[4deg]">
               <div className="bg-gray-50 dark:bg-gray-900/50 p-6 border-b border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Q3 Product Update 🚀</h3>
@@ -98,15 +100,9 @@ export default function Login() {
                   </div>
                 </div>
               </div>
-
               <div className="p-6 flex-1 bg-white dark:bg-gray-800">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  Hi <span className="font-bold text-[#FFA45C]">{"{{First Name}}"}</span>,
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-                  We've been working on some exciting new features. Click below to see what's new in your dashboard.
-                </p>
-                
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Hi <span className="font-bold text-[#FFA45C]">{"{{First Name}}"}</span>,</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">We've been working on some exciting new features. Click below to see what's new in your dashboard.</p>
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex items-center gap-4">
                    <div className="bg-white p-1 rounded-md shadow-sm">
                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=QRCODENG&color=000000&bgcolor=ffffff" alt="QR Code" className="w-12 h-12" />
@@ -116,30 +112,16 @@ export default function Login() {
                      <p className="text-[10px] text-gray-500">Scan to login instantly</p>
                    </div>
                 </div>
-
-                <div className="bg-[#FFA45C] text-[#2b1500] text-center py-2.5 rounded-lg text-sm font-bold w-full hover:bg-orange-400 transition-colors cursor-pointer">
-                  View Dashboard
-                </div>
+                <div className="bg-[#FFA45C] text-[#2b1500] text-center py-2.5 rounded-lg text-sm font-bold w-full hover:bg-orange-400 transition-colors cursor-pointer">View Dashboard</div>
               </div>
-
               <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-xs font-bold">
-                  <CheckCircle2 className="w-4 h-4" /> Delivered
-                </div>
-                <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">
-                  <BarChart2 className="w-4 h-4" /> 1,204 Sent
-                </div>
+                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-xs font-bold"><CheckCircle2 className="w-4 h-4" /> Delivered</div>
+                <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium"><BarChart2 className="w-4 h-4" /> 1,204 Sent</div>
               </div>
             </div>
           </div>
-
-          <h2 className="text-4xl font-bold leading-tight mb-6 text-white text-center">
-            Powerful email automation,<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFA45C] to-orange-300">from your own accounts.</span>
-          </h2>
-          <p className="text-gray-400 text-lg text-center font-medium max-w-md mx-auto">
-            Send personalised campaigns, track delivery, and manage replies directly from your connected inboxes.
-          </p>
+          <h2 className="text-4xl font-bold leading-tight mb-6 text-white text-center">Powerful email automation,<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFA45C] to-orange-300">from your own accounts.</span></h2>
+          <p className="text-gray-400 text-lg text-center font-medium max-w-md mx-auto">Send personalised campaigns, track delivery, and manage replies directly from your connected inboxes.</p>
         </div>
       </div>
     </div>
