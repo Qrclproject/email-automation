@@ -172,8 +172,6 @@ export default function DesignStudio() {
       const scaleX = naturalSize.width / rect.width;
       const scaleY = naturalSize.height / rect.height;
       
-      // Do NOT read the file as base64. Just pass the metadata.
-      // If there is a new file, we omit imageUrl so the backend uses the MinIO upload URL.
       const data = { 
         name: designName.trim(), 
         ...(imageFile ? {} : { imageUrl: imagePreview }), 
@@ -367,19 +365,23 @@ export default function DesignStudio() {
                 <span className="text-blue-500 text-[10px] font-bold pointer-events-none">T{idx + 1}</span>
               </Rnd>
             ))}
-
-            {/* Floating Live Preview */}
-            {showPreview && (
-              <div className="hidden md:block absolute top-4 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in" onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}>
-                <div className="flex items-center justify-between mb-1 px-1">
-                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Live Preview</span>
-                  <Maximize className="w-3 h-3 text-gray-400" />
-                </div>
-                <canvas ref={previewCanvasRef} className="w-full h-auto max-h-48 object-contain rounded border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" />
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Floating Live Preview - MOVED HERE (Fixed to bottom right of screen) */}
+        {showPreview && (
+          <div 
+            className="hidden md:block fixed bottom-24 right-8 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-40 cursor-zoom-in hover:scale-105 transition-transform" 
+            onClick={() => { setFullscreenPreviewUrl(previewCanvasRef.current?.toDataURL() || ''); setFullscreenPreview(true); }}
+          >
+            <div className="flex items-center justify-between mb-1 px-1">
+              <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Live Preview</span>
+              <Maximize className="w-3 h-3 text-gray-400" />
+            </div>
+            <canvas ref={previewCanvasRef} className="w-full h-auto max-h-48 object-contain rounded border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" />
+          </div>
+        )}
+
       </div>
 
       {/* Footer Actions */}
