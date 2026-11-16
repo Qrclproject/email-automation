@@ -31,17 +31,15 @@ export default function RequestAccess() {
             <ArrowLeft className="w-4 h-4" /> Back to sign in
           </Link>
 
-          <div className="flex items-center gap-4 mb-8">
-            <img 
-              src="/logo.png" 
-              alt="QRCODE.NG Logo" 
-              className="h-12 w-auto object-contain" 
-            />
-            <div>
-              <h1 className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">QRCODE Enterprise</h1>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Automation</p>
+                   <div className="flex justify-center mb-8">
+            <div className="bg-white rounded-xl p-2 px-4 shadow-sm">
+              <img 
+                src="/logo.png" 
+                alt="QRCODE.NG Logo" 
+                className="h-14 w-auto object-contain" 
+              />
             </div>
-          </div>
+          </div> 
           
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Request access</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-8">A Super Administrator reviews and activates every new account.</p>

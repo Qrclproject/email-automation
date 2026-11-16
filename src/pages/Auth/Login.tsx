@@ -25,17 +25,14 @@ export default function Login() {
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-[#FFA45C]"></div>
         
         <div className="w-full max-w-md p-8 md:p-12 relative z-10">
-          <div className="flex items-center gap-4 mb-10">
-            {/* REPLACED EMOJI WITH LOGO IMAGE */}
-            <img 
-              src="/logo.png" 
-              alt="QRCODE.NG Logo" 
-              className="h-12 w-auto object-contain" 
-            />
-            <div>
-              <h1 className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">QRCODE.NG</h1>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Automation</p>
-            </div>
+                 <div className="flex justify-center mb-10">
+            <div className="bg-white rounded-xl p-2 px-4 shadow-sm">
+              <img 
+                src="/logo.png" 
+                alt="QRCODE.NG Logo" 
+                className="h-14 w-auto object-contain" 
+              />
+            </div> 
           </div>
           
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h2>
