@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Mail, Lock, ArrowRight, BarChart2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, BarChart2, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true); // Start loading
+    
     try {
       await login(email, password);
       navigate('/dashboard');
     } catch (error: any) {
       console.error("Login Error Details:", error);
       
-      // Show a more descriptive error to help debug
       let errorMsg = 'Login failed.';
       if (error.message === 'Network Error') {
         errorMsg = 'Network Error: Cannot reach the backend. Is the URL correct?';
@@ -26,6 +28,8 @@ export default function Login() {
       }
       
       alert(errorMsg);
+    } finally {
+      setIsLoading(false); // Stop loading regardless of success or failure
     }
   };
 
@@ -49,7 +53,15 @@ export default function Login() {
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work email</label>
               <div className="relative">
                 <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@qrcodeng.com" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" />
+                <input 
+                  type="email" 
+                  required 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  placeholder="you@qrcodeng.com" 
+                  disabled={isLoading}
+                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all disabled:opacity-50" 
+                />
               </div>
             </div>
             
@@ -57,21 +69,42 @@ export default function Login() {
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password</label>
               <div className="relative">
                 <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" />
+                <input 
+                  type="password" 
+                  required 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  disabled={isLoading}
+                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all disabled:opacity-50" 
+                />
               </div>
             </div>
             
             <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="accent-[#FFA45C] w-4 h-4 rounded border-gray-300" defaultChecked />
+                <input type="checkbox" disabled={isLoading} className="accent-[#FFA45C] w-4 h-4 rounded border-gray-300" defaultChecked />
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Remember me</span>
               </label>
               <a href="#" className="text-sm font-bold text-[#FFA45C] hover:text-orange-600 transition-colors">Forgot password?</a>
             </div>
 
-            <button type="submit" className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3.5 rounded-xl mt-4 hover:bg-orange-400 hover:shadow-lg hover:shadow-orange-200 transition-all flex items-center justify-center gap-2 group">
-              Sign in
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3.5 rounded-xl mt-4 hover:bg-orange-400 hover:shadow-lg hover:shadow-orange-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
 
@@ -83,10 +116,11 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Hero Side (Keep exactly as it was) */}
+      {/* Right Hero Side */}
       <div className="hidden lg:flex flex-1 bg-[#0f172a] rounded-3xl ml-6 items-center justify-center relative overflow-hidden shadow-2xl">
-         {/* ... The 3D email card stuff ... */}
-         <div className="relative z-10 p-16 w-full max-w-2xl flex flex-col items-center">
+         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#FFA45C] rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30"></div>
+        <div className="relative z-10 p-16 w-full max-w-2xl flex flex-col items-center">
           <div className="relative w-80 md:w-96 h-[420px] mb-12 group perspective-1000">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
             <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 transform transition-transform duration-500 group-hover:rotate-0 group-hover:-translate-y-2 rotate-[4deg]">
