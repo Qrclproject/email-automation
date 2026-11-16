@@ -26,11 +26,14 @@ export default function Login() {
         
         <div className="w-full max-w-md p-8 md:p-12 relative z-10">
           <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 bg-[#FFA45C] rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-orange-200">
-              ✉
-            </div>
+            {/* REPLACED EMOJI WITH LOGO IMAGE */}
+            <img 
+              src="/logo.png" 
+              alt="QRCODE.NG Logo" 
+              className="h-12 w-auto object-contain" 
+            />
             <div>
-              <h1 className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">QRCODE Enterprise</h1>
+              <h1 className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">QRCODE.NG</h1>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Automation</p>
             </div>
           </div>
@@ -39,18 +42,12 @@ export default function Login() {
           <p className="text-gray-500 dark:text-gray-400 mb-8">Sign in to manage your campaigns.</p>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* ... form inputs stay exactly the same ... */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work email</label>
               <div className="relative">
                 <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@qrcodeng.com" 
-                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" 
-                />
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@qrcodeng.com" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" />
               </div>
             </div>
             
@@ -58,14 +55,7 @@ export default function Login() {
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password</label>
               <div className="relative">
                 <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••" 
-                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" 
-                />
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FFA45C] focus:border-[#FFA45C] outline-none transition-all" />
               </div>
             </div>
             
@@ -91,7 +81,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Hero Side */}
+      {/* ... right hero side stays exactly the same ... */}
       <div className="hidden lg:flex flex-1 bg-[#0f172a] rounded-3xl ml-6 items-center justify-center relative overflow-hidden shadow-2xl">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#FFA45C] rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30"></div>

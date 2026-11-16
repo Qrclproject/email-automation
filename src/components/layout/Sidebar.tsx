@@ -16,13 +16,17 @@ const toolNav = [
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   return (
-    // REMOVED 'fixed left-0 top-0' AND 'md:h-screen'. Changed to 'h-full'
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">
       <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#FFA45C] rounded-lg flex items-center justify-center text-white font-bold">✉</div>
+          {/* REPLACED EMOJI WITH LOGO IMAGE */}
+          <img 
+            src="/logo.png" 
+            alt="QRCODE.NG Logo" 
+            className="h-8 w-auto object-contain" 
+          />
           <div>
-            <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">QRCODE Enterprise</h1>
+            <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">QRCODE.NG</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Email Automation</p>
           </div>
         </div>

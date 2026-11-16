@@ -32,9 +32,11 @@ export default function RequestAccess() {
           </Link>
 
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 bg-[#FFA45C] rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-orange-200">
-              ✉
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="QRCODE.NG Logo" 
+              className="h-12 w-auto object-contain" 
+            />
             <div>
               <h1 className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">QRCODE Enterprise</h1>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Automation</p>
