@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Calendar, QrCode, List, CheckCircle2 } from 'lucide-react';
+import { Search, Calendar, QrCode, List } from 'lucide-react';
 import { api } from '../../services/api';
 
 export default function CheckInHub() {
