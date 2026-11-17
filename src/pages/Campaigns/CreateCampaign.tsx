@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCampaignStore } from '../../store/useCampaignStore';
+import { useAccountStore } from '../../store/useAccountStore'; // <-- Import Store
 import AudienceUploader from '../../components/campaign/AudienceUploader';
 import SpreadsheetEditor from '../../components/campaign/SpreadsheetEditor';
 import EmailComposer from '../../components/campaign/EmailComposer';
@@ -15,9 +16,11 @@ export default function CreateCampaign() {
     variableMappings, excelData, excelColumns, resetCampaign, emailBody
   } = useCampaignStore();
   
+  // Get accounts to check quota
+  const { accounts } = useAccountStore(); 
+  
   const navigate = useNavigate();
   
-  // Progress States
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchStage, setLaunchStage] = useState<'preparing' | 'sending'>('preparing');
   const [launchProgress, setLaunchProgress] = useState(0);
@@ -39,8 +42,22 @@ export default function CreateCampaign() {
   };
 
   const handleSend = async () => {
+    // --- QUOTA VALIDATION BEFORE SENDING ---
+    const selectedAcc = accounts.find(a => a.email === senderAccount);
+    
+    if (!selectedAcc) {
+      return alert("Please select a valid sending account in Step 2.");
+    }
+
+    const remainingQuota = (selectedAcc.dailyLimit as number) - selectedAcc.sentToday;
+    
+    if (excelData.length > remainingQuota) {
+      return alert(`Quota Exceeded! \n\nYou are trying to send to ${excelData.length} recipients, but the account ${senderAccount} only has ${remainingQuota} emails remaining for today (Limit: ${selectedAcc.dailyLimit}).\n\nPlease wait until tomorrow or use a different account.`);
+    }
+    // ---------------------------------------
+
     setIsLaunching(true);
-    setLaunchStage('preparing'); // Start at Preparing stage
+    setLaunchStage('preparing'); 
     setTotalCount(excelData.length);
     setSentCount(0);
     setLaunchProgress(0);
@@ -51,7 +68,6 @@ export default function CreateCampaign() {
         status: 'Pending',
       }));
 
-      // 1. Create Campaign (This is where DB save and Queue happens)
       const response = await api.post('/campaigns', {
         name: subject || 'New Campaign',
         subject: subject,
@@ -66,10 +82,8 @@ export default function CreateCampaign() {
 
       const campaignId = response.data._id;
       
-      // Switch UI to Sending stage
       setLaunchStage('sending');
 
-      // 2. Poll for progress
       const interval = setInterval(async () => {
         try {
           const res = await api.get(`/campaigns/${campaignId}`);
@@ -108,13 +122,11 @@ export default function CreateCampaign() {
   return (
     <div className="max-w-7xl mx-auto pb-12 w-full overflow-hidden relative">
       
-      {/* LAUNCHING PROGRESS MODAL OVERLAY */}
       {isLaunching && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center border border-gray-200 dark:border-gray-700 transition-all">
             
             {launchStage === 'preparing' ? (
-              // STAGE 1: PREPARING / HOSTING
               <>
                 <div className="relative w-20 h-20 mx-auto mb-6">
                   <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/30 rounded-full animate-ping"></div>
@@ -131,7 +143,6 @@ export default function CreateCampaign() {
                 </div>
               </>
             ) : (
-              // STAGE 2: SENDING EMAILS
               <>
                 <div className="w-20 h-20 mx-auto mb-6 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
                   <Send className="w-8 h-8 text-[#FFA45C] animate-pulse" />
@@ -157,7 +168,6 @@ export default function CreateCampaign() {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Campaign</h1>
@@ -168,7 +178,6 @@ export default function CreateCampaign() {
         </button>
       </div>
 
-      {/* Stepper */}
       <div className="flex items-center gap-2 mb-6 md:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-x-auto w-full whitespace-nowrap hide-scrollbar">
         {steps.map((s, i) => (
           <div key={s.id} className="flex items-center shrink-0">

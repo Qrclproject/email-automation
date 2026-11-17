@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useCampaignStore, SAMPLE_BUSYBEE_EMAIL } from '../../store/useCampaignStore';
 import { useAccountStore } from '../../store/useAccountStore';
-import { getDesigns } from '../../services/designService'; // Import the API
+import { getDesigns } from '../../services/designService';
 import { Paperclip, Trash2, LayoutTemplate, BoxSelect, FileText, AlertCircle } from 'lucide-react';
 
 export default function EmailComposer() {
@@ -13,18 +13,13 @@ export default function EmailComposer() {
   } = useCampaignStore();
   
   const { accounts, fetchAccounts } = useAccountStore();
-  
-  // State to hold real designs from MongoDB
   const [designs, setDesigns] = useState<any[]>([]);
 
-  // 1. Fetch Accounts and Designs on load
   useEffect(() => {
     fetchAccounts();
-    
     const fetchSavedDesigns = async () => {
       try {
         const res = await getDesigns();
-        // The backend returns { data: [...] }
         setDesigns(res.data.data || []);
       } catch (error) {
         console.error("Failed to load designs", error);
@@ -33,15 +28,18 @@ export default function EmailComposer() {
     fetchSavedDesigns();
   }, [fetchAccounts]);
 
-  // 2. Filter for eligible accounts
+  // Only show connected accounts with send permissions
   const availableAccounts = accounts.filter(
-    (acc) => acc.status === 'connected' && acc.permissions.send
+    (acc: any) => acc.status === 'connected' && acc.permissions.send
   );
 
-  // 3. Auto-select the first valid account
+  // Auto-select the first valid account that hasn't hit its limit
   useEffect(() => {
-    if (availableAccounts.length > 0 && !availableAccounts.find(a => a.email === senderAccount)) {
-      updateField('senderAccount', availableAccounts[0].email);
+    const validAccount = availableAccounts.find((a: any) => a.sentToday < a.dailyLimit);
+    if (validAccount && !availableAccounts.find((a: any) => a.email === senderAccount)) {
+      updateField('senderAccount', validAccount.email);
+    } else if (validAccount && !senderAccount) {
+      updateField('senderAccount', validAccount.email);
     }
   }, [availableAccounts, senderAccount, updateField]);
 
@@ -64,7 +62,6 @@ export default function EmailComposer() {
     }
   };
 
-  // 4. Updated Template Insertion Logic
   const handleInsertTemplate = (designId: string) => {
     if (!designId) {
       setTemplate(null);
@@ -74,10 +71,8 @@ export default function EmailComposer() {
     const design = designs.find(d => d._id === designId);
     if (!design) return;
 
-    // Save to store so the Preview and Backend know a template is used
     setTemplate(design);
     
-    // Insert the actual image into the Quill Editor
     const imageHtml = `
       <p style="text-align: center;">
         <img 
@@ -135,7 +130,6 @@ export default function EmailComposer() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      {/* Left Sidebar */}
       <div className="col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm h-fit space-y-6 transition-colors">
         
         <div>
@@ -159,9 +153,14 @@ export default function EmailComposer() {
                   onChange={(e) => updateField('senderAccount', e.target.value)} 
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg p-2 text-sm focus:ring-[#FFA45C]"
                 >
-                  {availableAccounts.map((acc) => (
-                    <option key={acc.id} value={acc.email}>{acc.email} ({acc.sentToday}/{acc.dailyLimit} used)</option>
-                  ))}
+                  {availableAccounts.map((acc: any) => {
+                    const isExhausted = acc.sentToday >= (acc.dailyLimit as number);
+                    return (
+                      <option key={acc.id || acc._id} value={acc.email} disabled={isExhausted}>
+                        {acc.email} ({acc.sentToday}/{acc.dailyLimit} used) {isExhausted ? ' - LIMIT REACHED' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               )}
             </div>
@@ -198,7 +197,6 @@ export default function EmailComposer() {
         </div>
       </div>
 
-      {/* Right Editor Area */}
       <div className="col-span-1 lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col min-h-[500px] transition-colors">
         <div className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 p-2 flex items-center justify-between">
           <span className="text-sm font-medium text-gray-600 dark:text-gray-300 px-2">Message Body</span>
@@ -227,7 +225,7 @@ export default function EmailComposer() {
           <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Attachments</h4>
             <div className="flex flex-wrap gap-2">
-              {attachments.map((file, idx) => (
+              {attachments.map((file: any, idx: number) => (
                 <div key={idx} className="flex items-center gap-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm text-gray-900 dark:text-gray-200">
                   <span className="truncate max-w-[150px]">{file.name}</span>
                   <button onClick={() => removeAttachment(idx)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
