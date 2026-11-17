@@ -83,6 +83,12 @@ const renderStyledQR = async (text: string, options: any) => {
 };
 
 const drawTextOnCanvas = (ctx: CanvasRenderingContext2D, text: string, style: any, x: number, y: number, width: number, height: number) => {
+  // Draw background box if color is set and not transparent
+  if (style.backgroundColor && style.backgroundColor !== 'transparent') {
+    ctx.fillStyle = style.backgroundColor;
+    ctx.fillRect(x, y, width, height);
+  }
+
   const fontSize = style.fontSize || 16;
   ctx.font = `${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}${fontSize}px ${style.fontFamily || 'Arial'}`;
   ctx.fillStyle = style.color || '#000000';
@@ -121,8 +127,6 @@ export default function DesignStudio() {
   const [qrPosition, setQrPosition] = useState({ x: 125, y: 300, width: 150, height: 150 });
   const [qrPadding, setQrPadding] = useState(15);
   const [qrConfig, setQrConfig] = useState({ lightColor: '#ffffff', finderOuterColor: '#000000', finderOuterShape: 'square', finderInnerColor: '#000000', finderInnerShape: 'square', dataColor: '#000000', dataShape: 'square' });
-  
-  // NEW: QR Data Field State
   const [qrDataField, setQrDataField] = useState('{{Email Address}}');
   
   const [textOverlays, setTextOverlays] = useState<any[]>([]);
@@ -147,8 +151,10 @@ export default function DesignStudio() {
         const data = res.data.data;
         if (data) {
           setDesignName(data.name); setImagePreview(data.imageUrl); setQrPosition(data.qrPosition || { x: 125, y: 300, width: 150, height: 150 });
-          setQrPadding(data.qrPadding || 15); if (data.qrConfig) setQrConfig(data.qrConfig); if (data.textOverlays) setTextOverlays(data.textOverlays);
-          if (data.qrDataField) setQrDataField(data.qrDataField); 
+          setQrPadding(data.qrPadding || 15); 
+          if (data.qrConfig) setQrConfig(data.qrConfig); 
+          if (data.textOverlays) setTextOverlays(data.textOverlays); 
+          if (data.qrDataField) setQrDataField(data.qrDataField);
         }
       });
     }
@@ -166,7 +172,18 @@ export default function DesignStudio() {
       id: `ov_${Date.now()}`, 
       placeholder: 'Type here...', 
       position: { x: 50, y: 50, width: 200, height: 50 }, 
-      style: { fontSize: 24, color: '#000000', bold: true, italic: false, underline: false, alignment: 'center', fontFamily: 'Montserrat', textTransform: 'none', lineHeight: 1.4 } 
+      style: { 
+        fontSize: 24, 
+        color: '#000000', 
+        backgroundColor: 'transparent', // New property
+        bold: true, 
+        italic: false, 
+        underline: false, 
+        alignment: 'center', 
+        fontFamily: 'Montserrat',
+        textTransform: 'none', 
+        lineHeight: 1.4 
+      } 
     };
     setTextOverlays(prev => [...prev, newOverlay]); 
     setSelectedOverlayIndex(textOverlays.length);
@@ -216,7 +233,7 @@ export default function DesignStudio() {
         qrPosition: { x: qrPosition.x * scaleX, y: qrPosition.y * scaleY, width: qrPosition.width * scaleX, height: qrPosition.height * scaleY }, 
         qrPadding, 
         qrConfig, 
-        qrDataField, // Save the selected QR field
+        qrDataField,
         textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) 
       };
       
@@ -311,20 +328,17 @@ export default function DesignStudio() {
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white">QR Code Styling</h4>
                   <button onClick={() => centerElement('qr')} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium bg-blue-50 px-2 py-1 rounded"><AlignCenter className="w-3 h-3"/> Center</button>
                 </div>
-
-                {/* NEW: Dynamic Data to Encode */}
-                <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <label className="text-xs font-bold text-gray-900 dark:text-white mb-1 block">Dynamic Data to Encode</label>
-                  <select value={qrDataField} onChange={(e) => setQrDataField(e.target.value)} className="w-full border border-orange-300 dark:border-orange-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded p-2 text-sm font-medium focus:ring-[#FFA45C]">
-                    <option value="{{Email Address}}">Email Address (Recommended)</option>
-                    <option value="{{Full Name}}">Full Name</option>
-                    <option value="{{Ticket ID}}">Ticket ID</option>
-                    <option value="https://qrcodeng.com">Static Link (Same for everyone)</option>
-                  </select>
-                  <p className="text-[10px] text-gray-500 mt-2">This is the data that will be scanned at the door.</p>
-                </div>
-
                 <div className="space-y-3">
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <label className="text-xs font-bold text-gray-900 dark:text-white mb-1 block">Dynamic Data to Encode</label>
+                    <select value={qrDataField} onChange={(e) => setQrDataField(e.target.value)} className="w-full border border-orange-300 dark:border-orange-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded p-2 text-sm font-medium focus:ring-[#FFA45C]">
+                      <option value="{{Email Address}}">Email Address (Recommended)</option>
+                      <option value="{{Full Name}}">Full Name</option>
+                      <option value="{{Ticket ID}}">Ticket ID</option>
+                      <option value="https://qrcodeng.com">Static Link (Same for everyone)</option>
+                    </select>
+                    <p className="text-[10px] text-gray-500 mt-2">This data will be scanned at the door.</p>
+                  </div>
                   <div>
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Background Color</label>
                     <input type="color" value={qrConfig.lightColor} onChange={(e) => handleQrConfigChange('lightColor', e.target.value)} className="w-full h-8 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
@@ -380,16 +394,20 @@ export default function DesignStudio() {
                             <input type="text" value={ov.placeholder} onChange={(e) => updateOverlayText(idx, e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs" placeholder="Type here..." />
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <label className="text-[10px] font-medium text-gray-500">Font Family</label>
+                              <label className="text-[10px] font-medium text-gray-500">Font</label>
                               <select value={ov.style.fontFamily} onChange={(e) => updateOverlayStyle(idx, 'fontFamily', e.target.value)} className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 text-xs">
                                 {fontOptions.map(font => <option key={font} value={font}>{font}</option>)}
                               </select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-medium text-gray-500">Color</label>
+                              <label className="text-[10px] font-medium text-gray-500">Text Color</label>
                               <input type="color" value={ov.style.color} onChange={(e) => updateOverlayStyle(idx, 'color', e.target.value)} className="w-full h-7 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-gray-500">Bg Box</label>
+                              <input type="color" value={ov.style.backgroundColor === 'transparent' ? '#ffffff' : ov.style.backgroundColor} onChange={(e) => updateOverlayStyle(idx, 'backgroundColor', e.target.value)} className="w-full h-7 p-0 border border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700" />
                             </div>
                           </div>
 
@@ -418,6 +436,9 @@ export default function DesignStudio() {
                             <button onClick={() => updateOverlayStyle(idx, 'italic', !ov.style.italic)} className={`flex-1 py-1 text-xs italic rounded border ${ov.style.italic ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>I</button>
                             <button onClick={() => updateOverlayStyle(idx, 'textTransform', ov.style.textTransform === 'uppercase' ? 'none' : 'uppercase')} className={`flex-1 py-1 text-xs rounded border ${ov.style.textTransform === 'uppercase' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>AA</button>
                           </div>
+                          
+                          {/* Option to remove background */}
+                          <button onClick={() => updateOverlayStyle(idx, 'backgroundColor', 'transparent')} className="w-full mt-2 text-[10px] text-gray-500 hover:text-gray-700 underline text-center">Remove Background Box</button>
                         </div>
                       )}
                     </div>
@@ -492,7 +513,7 @@ export default function DesignStudio() {
                 resizeGrid={[5, 5]}
                 className={`border border-dashed flex items-center justify-center z-20 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
               >
-                {/* ACTUAL TEXT RENDERING WITH STYLES */}
+                {/* ACTUAL TEXT RENDERING WITH STYLES AND BACKGROUND */}
                 <div 
                   className="w-full h-full overflow-hidden flex pointer-events-none p-1"
                   style={{
@@ -505,7 +526,8 @@ export default function DesignStudio() {
                     textTransform: ov.style.textTransform,
                     textAlign: ov.style.alignment,
                     lineHeight: ov.style.lineHeight,
-                    wordBreak: 'break-word'
+                    wordBreak: 'break-word',
+                    backgroundColor: ov.style.backgroundColor || 'transparent'
                   }}
                 >
                   <div className="w-full">{ov.placeholder}</div>
