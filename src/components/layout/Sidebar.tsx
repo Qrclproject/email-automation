@@ -4,7 +4,7 @@ import { LayoutDashboard, Mail, FileImage, Paintbrush, AtSign, Settings, Users, 
 const mainNav = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Campaigns', path: '/campaigns', icon: Mail },
-  { name: 'Event Check-in', path: '/checkin', icon: QrCode }, // Added here
+  { name: 'Event Check-in', path: '/checkin', icon: QrCode },
   { name: 'Design Templates', path: '/templates', icon: FileImage },
   { name: 'Design Studio', path: '/studio', icon: Paintbrush },
   { name: 'Email Accounts', path: '/accounts', icon: AtSign },
@@ -20,8 +20,9 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">
       <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex flex-col gap-2">
-          <div className="bg-white rounded-lg p-1.5 inline-block shadow-sm w-fit">
-            <img src="/logo.png" alt="QRCODE.NG Logo" className="h-8 w-auto object-contain" />
+          <div className="bg-white rounded-lg p-2 inline-block shadow-sm w-fit">
+            {/* Logo enlarged: h-8 -> h-12 */}
+            <img src="/logo.png" alt="QRCODE.NG Logo" className="h-18 w-auto object-contain" />
           </div>
           <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Email Automation</p>
         </div>

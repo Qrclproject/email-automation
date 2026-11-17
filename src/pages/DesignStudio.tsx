@@ -82,31 +82,71 @@ const renderStyledQR = async (text: string, options: any) => {
   return offCanvas.toDataURL();
 };
 
-const drawTextOnCanvas = (ctx: CanvasRenderingContext2D, text: string, style: any, x: number, y: number, width: number, height: number) => {
-  // Draw background box if color is set and not transparent
+const drawTextOnCanvas = (ctx: CanvasRenderingContext2D, text: string, style: any, x: number, y: number, width: number, height: number, scale: number = 1) => {
   if (style.backgroundColor && style.backgroundColor !== 'transparent') {
     ctx.fillStyle = style.backgroundColor;
     ctx.fillRect(x, y, width, height);
   }
 
-  const fontSize = style.fontSize || 16;
+  const fontSize = (style.fontSize || 16) * scale; 
   ctx.font = `${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}${fontSize}px ${style.fontFamily || 'Arial'}`;
   ctx.fillStyle = style.color || '#000000';
   ctx.textAlign = style.alignment || 'left';
   ctx.textBaseline = 'top';
+  
   let displayText = text;
   if (style.textTransform === 'uppercase') displayText = text.toUpperCase();
   else if (style.textTransform === 'lowercase') displayText = text.toLowerCase();
   else if (style.textTransform === 'capitalize') displayText = text.replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const words = displayText.split(' '); const lines = []; let currentLine = '';
+  
+  const words = displayText.split(' '); 
+  const lines = []; 
+  let currentLine = '';
+  
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
-    if (ctx.measureText(testLine).width <= width) { currentLine = testLine; } 
-    else { if (currentLine) lines.push(currentLine); currentLine = word; }
+    if (ctx.measureText(testLine).width <= width) { 
+      currentLine = testLine; 
+    } else { 
+      if (currentLine) lines.push(currentLine); 
+      if (ctx.measureText(word).width > width) {
+         let currentWordPart = '';
+         for (let i = 0; i < word.length; i++) {
+           const testPart = currentWordPart + word[i];
+           if (ctx.measureText(testPart).width > width) {
+             lines.push(currentWordPart);
+             currentWordPart = word[i];
+           } else {
+             currentWordPart = testPart;
+           }
+         }
+         currentLine = currentWordPart;
+      } else {
+         currentLine = word;
+      }
+    }
   }
   if (currentLine) lines.push(currentLine);
+  
   const lineHeight = (style.lineHeight || 1.4) * fontSize;
-  lines.forEach((line, i) => { const ty = y + i * lineHeight; if (ty + lineHeight > y + height) return; let tx = x; if (style.alignment === 'center') tx = x + width / 2; else if (style.alignment === 'right') tx = x + width; ctx.fillText(line, tx, ty); });
+  const totalTextHeight = lines.length * lineHeight;
+  
+  // Calculate vertical starting position based on alignment
+  let startY = y;
+  if (style.verticalAlign === 'center') {
+    startY = y + (height - totalTextHeight) / 2;
+  } else if (style.verticalAlign === 'bottom') {
+    startY = y + height - totalTextHeight;
+  }
+
+  lines.forEach((line, i) => { 
+    const ty = startY + i * lineHeight; 
+    if (ty >= y + height) return; 
+    let tx = x; 
+    if (style.alignment === 'center') tx = x + width / 2; 
+    else if (style.alignment === 'right') tx = x + width; 
+    ctx.fillText(line, tx, ty); 
+  });
 };
 
 const QRPreviewBox = ({ config, padding }: { config: any, padding: number }) => {
@@ -141,6 +181,9 @@ export default function DesignStudio() {
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [fullscreenPreviewUrl, setFullscreenPreviewUrl] = useState('');
 
+  const [loadedQrPos, setLoadedQrPos] = useState<any>(null);
+  const [loadedOverlays, setLoadedOverlays] = useState<any[]>([]);
+
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const [naturalSize, setNaturalSize] = useState({ width: 400, height: 560 });
@@ -150,15 +193,52 @@ export default function DesignStudio() {
       getDesignById(editId).then((res) => {
         const data = res.data.data;
         if (data) {
-          setDesignName(data.name); setImagePreview(data.imageUrl); setQrPosition(data.qrPosition || { x: 125, y: 300, width: 150, height: 150 });
+          setDesignName(data.name); 
+          setImagePreview(data.imageUrl); 
+          if (data.qrPosition) setLoadedQrPos(data.qrPosition);
           setQrPadding(data.qrPadding || 15); 
           if (data.qrConfig) setQrConfig(data.qrConfig); 
-          if (data.textOverlays) setTextOverlays(data.textOverlays); 
           if (data.qrDataField) setQrDataField(data.qrDataField);
+          if (data.textOverlays) setLoadedOverlays(data.textOverlays);
         }
       });
     }
   }, [editId]);
+
+  useEffect(() => {
+    if (imgRef.current && naturalSize.width > 0 && (loadedQrPos || loadedOverlays.length > 0)) {
+      const rect = imgRef.current.getBoundingClientRect();
+      const scaleX = rect.width / naturalSize.width;
+      const scaleY = rect.height / naturalSize.height;
+
+      if (loadedQrPos) {
+        setQrPosition({
+          x: loadedQrPos.x * scaleX,
+          y: loadedQrPos.y * scaleY,
+          width: loadedQrPos.width * scaleX,
+          height: loadedQrPos.height * scaleY
+        });
+        setLoadedQrPos(null);
+      }
+
+      if (loadedOverlays.length > 0) {
+        setTextOverlays(loadedOverlays.map(ov => ({
+          ...ov,
+          position: {
+            x: ov.position.x * scaleX,
+            y: ov.position.y * scaleY,
+            width: ov.position.width * scaleX,
+            height: ov.position.height * scaleY
+          },
+          style: {
+            ...ov.style,
+            fontSize: ov.style.fontSize * scaleX // Scale down for DOM
+          }
+        })));
+        setLoadedOverlays([]);
+      }
+    }
+  }, [naturalSize, loadedQrPos, loadedOverlays]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -175,11 +255,12 @@ export default function DesignStudio() {
       style: { 
         fontSize: 24, 
         color: '#000000', 
-        backgroundColor: 'transparent', // New property
+        backgroundColor: 'transparent',
         bold: true, 
         italic: false, 
         underline: false, 
         alignment: 'center', 
+        verticalAlign: 'center', // Added vertical alignment
         fontFamily: 'Montserrat',
         textTransform: 'none', 
         lineHeight: 1.4 
@@ -195,15 +276,25 @@ export default function DesignStudio() {
   };
 
   const updateOverlayStyle = (index: number, key: string, value: any) => {
-    const newOv = [...textOverlays];
-    newOv[index].style[key] = value;
-    setTextOverlays(newOv);
+    setTextOverlays(prev => {
+      const newOv = [...prev];
+      newOv[index] = {
+        ...newOv[index],
+        style: {
+          ...newOv[index].style,
+          [key]: value
+        }
+      };
+      return newOv;
+    });
   };
 
   const updateOverlayText = (index: number, text: string) => {
-    const newOv = [...textOverlays];
-    newOv[index].placeholder = text;
-    setTextOverlays(newOv);
+    setTextOverlays(prev => {
+      const newOv = [...prev];
+      newOv[index] = { ...newOv[index], placeholder: text };
+      return newOv;
+    });
   };
 
   const centerElement = (type: 'qr' | 'text', index?: number) => {
@@ -212,9 +303,11 @@ export default function DesignStudio() {
       const newX = (canvasWidth - qrPosition.width) / 2;
       setQrPosition({ ...qrPosition, x: newX });
     } else if (type === 'text' && index !== undefined) {
-      const newOv = [...textOverlays];
-      newOv[index].position.x = (canvasWidth - newOv[index].position.width) / 2;
-      setTextOverlays(newOv);
+      setTextOverlays(prev => {
+        const newOv = [...prev];
+        newOv[index].position = { ...newOv[index].position, x: (canvasWidth - newOv[index].position.width) / 2 };
+        return newOv;
+      });
     }
   };
 
@@ -234,7 +327,11 @@ export default function DesignStudio() {
         qrPadding, 
         qrConfig, 
         qrDataField,
-        textOverlays: textOverlays.map(ov => ({ placeholder: ov.placeholder, position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, style: ov.style })) 
+        textOverlays: textOverlays.map(ov => ({ 
+          placeholder: ov.placeholder, 
+          position: { x: ov.position.x * scaleX, y: ov.position.y * scaleY, width: ov.position.width * scaleX, height: ov.position.height * scaleY }, 
+          style: { ...ov.style, fontSize: ov.style.fontSize * scaleX } // Scale up for natural save
+        })) 
       };
       
       if (editId) { 
@@ -260,14 +357,44 @@ export default function DesignStudio() {
 
   useEffect(() => {
     const renderPreview = async () => {
-      if (!showPreview) return; const canvas = previewCanvasRef.current; if (!canvas) return; const ctx = canvas.getContext('2d')!;
+      if (!showPreview) return; 
+      const canvas = previewCanvasRef.current; if (!canvas) return; 
+      const ctx = canvas.getContext('2d')!;
       canvas.width = naturalSize.width; canvas.height = naturalSize.height;
-      if (imagePreview) { const img = new Image(); img.src = imagePreview; await new Promise(resolve => { img.onload = resolve; }); ctx.drawImage(img, 0, 0, naturalSize.width, naturalSize.height); } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, naturalSize.width, naturalSize.height); }
-      const imgElement = imgRef.current; const rect = imgElement ? imgElement.getBoundingClientRect() : { width: 400, height: 560 }; const scaleX = rect.width / naturalSize.width; const scaleY = rect.height / naturalSize.height;
+      
+      if (imagePreview) { 
+        const img = new Image(); img.src = imagePreview; 
+        await new Promise(resolve => { img.onload = resolve; }); 
+        ctx.drawImage(img, 0, 0, naturalSize.width, naturalSize.height); 
+      } else { 
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, naturalSize.width, naturalSize.height); 
+      }
+      
+      const imgElement = imgRef.current; 
+      const rect = imgElement ? imgElement.getBoundingClientRect() : { width: 400, height: 560 }; 
+      const scaleX = rect.width / naturalSize.width || 1; 
+      const scaleY = rect.height / naturalSize.height || 1;
+      
       const qrNatural = { x: qrPosition.x / scaleX, y: qrPosition.y / scaleY, width: qrPosition.width / scaleX, height: qrPosition.height / scaleY };
       const qrDataUrl = await renderStyledQR('Sample QR Code', qrConfig);
-      if (qrDataUrl) { const qrImg = new Image(); qrImg.src = qrDataUrl; await new Promise(resolve => { qrImg.onload = resolve; }); ctx.fillStyle = qrConfig.lightColor; ctx.fillRect(qrNatural.x, qrNatural.y, qrNatural.width, qrNatural.height); const paddingFrac = qrPadding / 100; const innerW = Math.round(qrNatural.width * (1 - paddingFrac * 2)); const innerH = Math.round(qrNatural.height * (1 - paddingFrac * 2)); const offX = Math.round((qrNatural.width - innerW) / 2); const offY = Math.round((qrNatural.height - innerH) / 2); ctx.drawImage(qrImg, qrNatural.x + offX, qrNatural.y + offY, innerW, innerH); }
-      for (const overlay of textOverlays) { const naturalPos = { x: overlay.position.x / scaleX, y: overlay.position.y / scaleY, width: overlay.position.width / scaleX, height: overlay.position.height / scaleY }; drawTextOnCanvas(ctx, overlay.placeholder || 'Text', overlay.style, naturalPos.x, naturalPos.y, naturalPos.width, naturalPos.height); }
+      
+      if (qrDataUrl) { 
+        const qrImg = new Image(); qrImg.src = qrDataUrl; 
+        await new Promise(resolve => { qrImg.onload = resolve; }); 
+        ctx.fillStyle = qrConfig.lightColor; 
+        ctx.fillRect(qrNatural.x, qrNatural.y, qrNatural.width, qrNatural.height); 
+        const paddingFrac = qrPadding / 100; 
+        const innerW = Math.round(qrNatural.width * (1 - paddingFrac * 2)); 
+        const innerH = Math.round(qrNatural.height * (1 - paddingFrac * 2)); 
+        const offX = Math.round((qrNatural.width - innerW) / 2); 
+        const offY = Math.round((qrNatural.height - innerH) / 2); 
+        ctx.drawImage(qrImg, qrNatural.x + offX, qrNatural.y + offY, innerW, innerH); 
+      }
+      
+      for (const overlay of textOverlays) { 
+        const naturalPos = { x: overlay.position.x / scaleX, y: overlay.position.y / scaleY, width: overlay.position.width / scaleX, height: overlay.position.height / scaleY }; 
+        drawTextOnCanvas(ctx, overlay.placeholder || 'Text', overlay.style, naturalPos.x, naturalPos.y, naturalPos.width, naturalPos.height, 1 / scaleX); 
+      }
     };
     renderPreview();
   }, [showPreview, imagePreview, naturalSize, qrPosition, qrPadding, qrConfig, textOverlays]);
@@ -423,11 +550,20 @@ export default function DesignStudio() {
                           </div>
 
                           <div>
-                            <label className="text-[10px] font-medium text-gray-500">Alignment</label>
+                            <label className="text-[10px] font-medium text-gray-500">Horizontal Align</label>
                             <div className="flex gap-1 mt-1">
                               <button onClick={() => updateOverlayStyle(idx, 'alignment', 'left')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'left' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Left</button>
                               <button onClick={() => updateOverlayStyle(idx, 'alignment', 'center')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'center' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Center</button>
                               <button onClick={() => updateOverlayStyle(idx, 'alignment', 'right')} className={`flex-1 py-1 text-xs rounded border ${ov.style.alignment === 'right' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Right</button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-500">Vertical Align</label>
+                            <div className="flex gap-1 mt-1">
+                              <button onClick={() => updateOverlayStyle(idx, 'verticalAlign', 'top')} className={`flex-1 py-1 text-xs rounded border ${ov.style.verticalAlign === 'top' || !ov.style.verticalAlign ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Top</button>
+                              <button onClick={() => updateOverlayStyle(idx, 'verticalAlign', 'center')} className={`flex-1 py-1 text-xs rounded border ${ov.style.verticalAlign === 'center' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Center</button>
+                              <button onClick={() => updateOverlayStyle(idx, 'verticalAlign', 'bottom')} className={`flex-1 py-1 text-xs rounded border ${ov.style.verticalAlign === 'bottom' ? 'bg-gray-800 text-white' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>Bottom</button>
                             </div>
                           </div>
 
@@ -437,7 +573,6 @@ export default function DesignStudio() {
                             <button onClick={() => updateOverlayStyle(idx, 'textTransform', ov.style.textTransform === 'uppercase' ? 'none' : 'uppercase')} className={`flex-1 py-1 text-xs rounded border ${ov.style.textTransform === 'uppercase' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'}`}>AA</button>
                           </div>
                           
-                          {/* Option to remove background */}
                           <button onClick={() => updateOverlayStyle(idx, 'backgroundColor', 'transparent')} className="w-full mt-2 text-[10px] text-gray-500 hover:text-gray-700 underline text-center">Remove Background Box</button>
                         </div>
                       )}
@@ -506,16 +641,27 @@ export default function DesignStudio() {
                 key={ov.id} 
                 size={{ width: ov.position.width, height: ov.position.height }} 
                 position={{ x: ov.position.x, y: ov.position.y }} 
-                onDragStop={(_e, d) => { const newOv = [...textOverlays]; newOv[idx].position.x = d.x; newOv[idx].position.y = d.y; setTextOverlays(newOv); }} 
-                onResizeStop={(_e, _dir, ref, _delta, pos) => { const newOv = [...textOverlays]; newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) }; setTextOverlays(newOv); }} 
+                onDragStop={(_e, d) => { 
+                  setTextOverlays(prev => {
+                    const newOv = [...prev];
+                    newOv[idx].position = { ...newOv[idx].position, x: d.x, y: d.y };
+                    return newOv;
+                  });
+                }} 
+                onResizeStop={(_e, _dir, ref, _delta, pos) => { 
+                  setTextOverlays(prev => {
+                    const newOv = [...prev];
+                    newOv[idx].position = { x: pos.x, y: pos.y, width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10) };
+                    return newOv;
+                  });
+                }} 
                 bounds="parent" 
                 dragGrid={[5, 5]}
                 resizeGrid={[5, 5]}
-                className={`border border-dashed flex items-center justify-center z-20 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
+                className={`border border-dashed z-20 ${selectedOverlayIndex === idx ? 'border-blue-500 bg-blue-500/10' : 'border-transparent'}`}
               >
-                {/* ACTUAL TEXT RENDERING WITH STYLES AND BACKGROUND */}
                 <div 
-                  className="w-full h-full overflow-hidden flex pointer-events-none p-1"
+                  className="w-full h-full overflow-hidden pointer-events-none p-1 flex"
                   style={{
                     fontSize: `${ov.style.fontSize}px`,
                     color: ov.style.color,
@@ -527,10 +673,12 @@ export default function DesignStudio() {
                     textAlign: ov.style.alignment,
                     lineHeight: ov.style.lineHeight,
                     wordBreak: 'break-word',
-                    backgroundColor: ov.style.backgroundColor || 'transparent'
+                    backgroundColor: ov.style.backgroundColor || 'transparent',
+                    alignItems: ov.style.verticalAlign === 'center' ? 'center' : ov.style.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start',
+                    justifyContent: ov.style.alignment === 'center' ? 'center' : ov.style.alignment === 'right' ? 'flex-end' : 'flex-start'
                   }}
                 >
-                  <div className="w-full">{ov.placeholder}</div>
+                  <div style={{ width: '100%' }}>{ov.placeholder}</div>
                 </div>
               </Rnd>
             ))}

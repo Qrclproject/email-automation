@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { ArrowLeft, CheckCircle2, XCircle, Search, Loader2, ScanLine, CameraOff, History } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ScanLine, CameraOff, History, Camera, Barcode } from 'lucide-react';
 import { api } from '../../services/api';
+
+const FEED_KEY = 'recent-checkins';
 
 export default function QRScanner() {
   const { id } = useParams();
@@ -12,11 +14,28 @@ export default function QRScanner() {
   const [scanResult, setScanResult] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<'camera' | 'external'>('camera');
   const [manualCode, setManualCode] = useState('');
-  const [recentScans, setRecentScans] = useState<any[]>([]);
+
+  // ✅ Persisted feed — survives remounts, StrictMode double-mounts and navigation
+  const [recentScans, setRecentScans] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem(FEED_KEY) || '[]'); } catch { return []; }
+  });
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isProcessingRef = useRef(false);
+  const isScannerRunningRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const manualInputRef = useRef<HTMLInputElement>(null);
+
+  // ✅ Single source of truth for logging a scan to the side feed
+  const addScan = (entry: { name: string; email: string; time: string; status: 'success' | 'duplicate' }) => {
+    setRecentScans(prev => {
+      const next = [entry, ...prev].slice(0, 5);
+      localStorage.setItem(FEED_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     api.get(`/campaigns/${id}`).then(res => {
@@ -29,41 +48,46 @@ export default function QRScanner() {
   }, [id]);
 
   const processCheckIn = async (scannedText: string) => {
-    if (!scannedText || isProcessingRef.current) return; 
-    
-    isProcessingRef.current = true; 
+    if (!scannedText || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setErrorMsg(null);
-    
-    try {
-      const response = await api.post(`/campaigns/${id}/checkin`, { 
-        scannedValue: scannedText 
-      });
 
-      const name = response.data.attendee['Full Name'] || response.data.attendee['Attendee Name'] || response.data.attendee.Name || 'Unknown';
-      const email = response.data.attendee.email || response.data.attendee['Email Address'] || 'N/A';
-      const timeStr = new Date(response.data.checkedInAt).toLocaleTimeString();
+    try {
+      const response = await api.post(`/campaigns/${id}/checkin`, { scannedValue: scannedText });
+
+      // ✅ Defensive extraction — never throws, feed always updates
+      const attendee = response.data?.attendee ?? {};
+      const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee.Name || attendee.name || 'Unknown';
+      const email = attendee.email || attendee['Email Address'] || 'N/A';
+      const timeStr = new Date(response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
       setScanResult({ status: 'success', name, email, time: timeStr, text: 'Access Granted' });
-      setRecentScans(prev => [{ name, time: timeStr, status: 'success' }, ...prev].slice(0, 5));
+      addScan({ name, email, time: timeStr, status: 'success' });
 
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Error processing ticket';
-      
+
       if (errorMessage === 'Already checked in') {
-        const attendee = err.response.data.attendee;
-        const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee.Name || 'Unknown';
+        const attendee = err.response?.data?.attendee ?? {};
+        const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee.Name || attendee.name || 'Unknown';
         const email = attendee.email || attendee['Email Address'] || 'N/A';
-        const time = new Date(err.response.data.checkedInAt).toLocaleTimeString();
-        
+        const time = new Date(err.response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
+
         setScanResult({ status: 'already_checked_in', name, email, time, text: 'Ticket Already Used!' });
+        // ✅ Duplicates now appear in the feed too
+        addScan({ name, email, time, status: 'duplicate' });
       } else {
         setErrorMsg(errorMessage);
       }
+    } finally {
+      setTimeout(() => { isProcessingRef.current = false; }, 500);
     }
   };
 
   useEffect(() => {
-    if (!loading && campaign && !scanResult && !errorMsg) {
+    isMountedRef.current = true;
+
+    if (!loading && campaign && !scanResult && !errorMsg && scanMode === 'camera') {
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
 
@@ -71,58 +95,44 @@ export default function QRScanner() {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          if (!isProcessingRef.current) {
-            html5QrCode.pause();
+          if (!isProcessingRef.current && isMountedRef.current) {
             processCheckIn(decodedText);
           }
         },
-        () => { }
-      ).catch((err) => {
-        console.error("Camera start error:", err);
-        setCameraError("Could not access the camera. Please allow camera permissions in your browser settings, or use the manual entry below.");
-      });
+        () => { /* Ignore background errors */ }
+      )
+        .then(() => { if (isMountedRef.current) isScannerRunningRef.current = true; })
+        .catch((err) => {
+          if (isMountedRef.current) {
+            console.error("Camera start error:", err);
+            setCameraError("Could not access the camera. Please allow permissions or switch to External Scanner mode.");
+            scannerRef.current = null;
+          }
+        });
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(e => console.error("Failed to stop scanner", e));
-        scannerRef.current = null;
+      isMountedRef.current = false;
+      if (scannerRef.current && isScannerRunningRef.current) {
+        scannerRef.current.stop().catch(() => {});
+        isScannerRunningRef.current = false;
       }
+      scannerRef.current = null;
     };
-  }, [loading, campaign, scanResult, errorMsg]);
+  }, [loading, campaign, scanResult, errorMsg, scanMode]);
 
   useEffect(() => {
-    let barcode = '';
-    let timeout: any = null;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === 'INPUT') return;
-      
-      if (e.key === 'Enter') {
-        if (barcode.length > 2) { 
-          e.preventDefault(); 
-          processCheckIn(barcode);
-          barcode = '';
-        }
-      } else if (e.key.length === 1) { 
-        barcode += e.key;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => { barcode = ''; }, 100);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(timeout);
-    };
-  }, [scanResult, errorMsg]);
+    if (scanMode === 'external' && manualInputRef.current && !scanResult && !errorMsg) {
+      manualInputRef.current.focus();
+    }
+  }, [scanMode, scanResult, errorMsg]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (manualCode) {
       processCheckIn(manualCode);
       setManualCode('');
+      setTimeout(() => { manualInputRef.current?.focus(); }, 100);
     }
   };
 
@@ -136,105 +146,181 @@ export default function QRScanner() {
   if (loading) return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#FFA45C]"/></div>;
 
   return (
-    <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6 h-[calc(100vh-8rem)]">
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col relative">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 z-20">
-          <button onClick={() => navigate('/checkin')} className="text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 text-sm font-medium transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">{campaign?.name}</span>
-        </div>
-        
-        <div className="flex-1 flex flex-col items-center justify-center relative bg-black/5 dark:bg-black/50">
-          <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
-            <div id="reader" className="w-full h-full max-w-md mx-auto"></div>
-            
-            {!scanResult && !errorMsg && !cameraError && (
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                 <div className="w-64 h-64 border-2 border-[#FFA45C] rounded-3xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.5)]">
-                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#FFA45C] rounded-tl-lg"></div>
-                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#FFA45C] rounded-tr-lg"></div>
-                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#FFA45C] rounded-bl-lg"></div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#FFA45C] rounded-br-lg"></div>
-                 </div>
-                 <p className="mt-8 text-white font-medium bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">Align QR code within the frame</p>
-              </div>
-            )}
-          </div>
+    <div className="max-w-6xl mx-auto flex flex-col gap-6">
+      <div>
+        <button
+          onClick={() => navigate('/checkin')}
+          className="text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 text-sm font-medium transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Event Check-in
+        </button>
 
-          {cameraError && (
-             <div className="absolute inset-0 bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-6 z-20 text-center">
-                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4"><CameraOff className="w-8 h-8" /></div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Camera Not Available</h3>
-                <p className="text-sm text-gray-500 max-w-sm mb-6">{cameraError}</p>
-                <button onClick={() => window.location.reload()} className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium">Retry Camera</button>
-             </div>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
+          {campaign?.name}
+        </h1>
+
+        <div className="flex items-center gap-3 mt-3">
+          <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs font-semibold px-2.5 py-1 rounded-md">
+            {campaign?.status || 'Active'}
+          </span>
+          {campaign?.createdAt && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Created {new Date(campaign.createdAt).toLocaleString()}
+            </span>
           )}
-
-          {(scanResult || errorMsg) && (
-            <div className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-30">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${scanResult?.status === 'success' ? 'bg-green-100 text-green-500' : scanResult?.status === 'already_checked_in' ? 'bg-yellow-100 text-yellow-500' : 'bg-red-100 text-red-500'}`}>
-                {scanResult?.status === 'success' ? <CheckCircle2 className="w-10 h-10" /> : <XCircle className="w-10 h-10" />}
-              </div>
-              
-              <h3 className={`text-2xl font-bold mb-2 ${scanResult?.status === 'success' ? 'text-green-600 dark:text-green-400' : scanResult?.status === 'already_checked_in' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
-                {scanResult?.text || 'Invalid Ticket'}
-              </h3>
-              
-              {errorMsg ? (
-                <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{errorMsg}</p>
-              ) : (
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 w-full max-w-sm mb-6 shadow-sm">
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Name:</span> {scanResult?.name}</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Email:</span> {scanResult?.email}</p>
-                  {scanResult?.time && <p className="text-sm text-gray-800 dark:text-gray-200"><span className="font-semibold">Time:</span> {scanResult?.time}</p>}
-                </div>
-              )}
-
-              <button onClick={resetScanner} className="w-full max-w-sm bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg hover:bg-orange-400 transition-colors shadow-sm">
-                Scan Next Attendee
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20">
-          <p className="text-xs text-center text-gray-500 mb-2 flex items-center justify-center gap-2"><ScanLine className="w-4 h-4" /> External USB/Bluetooth Scanner Active</p>
-          <form onSubmit={handleManualSubmit} className="flex gap-2 max-w-md mx-auto">
-            <input type="text" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="Or type Ticket ID manually" className="flex-1 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FFA45C] outline-none" />
-            <button type="submit" className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800"><Search className="w-4 h-4" /></button>
-          </form>
         </div>
       </div>
 
-      <div className="w-full md:w-80 flex flex-col h-full">
-        {recentScans.length > 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
-              <History className="w-4 h-4 text-[#FFA45C]" />
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Check-ins</h3>
+      {/* ✅ md: breakpoint restored so the feed sits beside the scanner on medium screens */}
+      <div className="flex flex-col md:flex-row gap-6 md:h-[calc(100vh-18rem)]">
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col relative min-h-[520px] md:min-h-0">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-wrap items-center justify-between gap-3 z-20">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">QR Scanner</h2>
+            <div className="flex bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
+              <button
+                onClick={() => setScanMode('camera')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${scanMode === 'camera' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              >
+                <Camera className="w-4 h-4" /> Camera
+              </button>
+              <button
+                onClick={() => setScanMode('external')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${scanMode === 'external' ? 'bg-[#FFA45C] text-[#2b1500] shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              >
+                <Barcode className="w-4 h-4" /> External Scanner
+              </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {recentScans.map((scan, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 animate-in slide-in-from-right-4 duration-300">
-                  <div className="flex flex-col truncate pr-2">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{scan.name}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{scan.time}</span>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center relative bg-black/5 dark:bg-black/50">
+            {scanMode === 'camera' && (
+              <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
+                <div id="reader" className="w-full h-full max-w-md mx-auto"></div>
+
+                {!scanResult && !errorMsg && !cameraError && (
+                  <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                    <div className="w-64 h-64 border-2 border-[#FFA45C] rounded-3xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.5)]">
+                      <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#FFA45C] rounded-tl-lg"></div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#FFA45C] rounded-tr-lg"></div>
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#FFA45C] rounded-bl-lg"></div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#FFA45C] rounded-br-lg"></div>
+                    </div>
+                    <p className="mt-8 text-white font-medium bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">Align QR code within the frame</p>
                   </div>
-                  <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                  </div>
+                )}
+              </div>
+            )}
+
+            {scanMode === 'external' && !scanResult && !errorMsg && (
+              <div className="w-full max-w-lg p-6 flex flex-col items-center">
+                <div className="w-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 p-4 rounded-lg text-center mb-6 flex items-center justify-center gap-2 text-sm font-medium">
+                  <ScanLine className="w-5 h-5" /> External scanner mode active – focus the input field below and scan.
                 </div>
-              ))}
+
+                <form onSubmit={handleManualSubmit} className="w-full">
+                  <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">External Scanner</label>
+                  <div className="flex gap-2">
+                    <input
+                      ref={manualInputRef}
+                      type="text"
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      placeholder="Scan QR code..."
+                      className="flex-1 border-2 border-orange-300 dark:border-orange-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-3 text-lg focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 outline-none transition-all"
+                    />
+                    <button type="submit" className="bg-[#FFA45C] text-[#2b1500] px-6 py-3 rounded-lg text-sm font-bold hover:bg-orange-400 transition-colors shadow-sm">
+                      Check In
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">The scanner will auto-submit when it sends Enter.</p>
+                </form>
+              </div>
+            )}
+
+            {cameraError && scanMode === 'camera' && (
+              <div className="absolute inset-0 bg-white dark:bg-gray-800 flex flex-col items-center justify-center p-6 z-20 text-center">
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4"><CameraOff className="w-8 h-8" /></div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Camera Not Available</h3>
+                <p className="text-sm text-gray-500 max-w-sm mb-6">{cameraError}</p>
+                <button onClick={() => setScanMode('external')} className="px-6 py-2.5 bg-[#FFA45C] text-[#2b1500] rounded-lg font-bold hover:bg-orange-400 transition-colors shadow-sm">
+                  Switch to External Scanner
+                </button>
+              </div>
+            )}
+
+            {(scanResult || errorMsg) && (
+              <div className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-30">
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${scanResult?.status === 'success' ? 'bg-green-100 text-green-500' : scanResult?.status === 'already_checked_in' ? 'bg-yellow-100 text-yellow-500' : 'bg-red-100 text-red-500'}`}>
+                  {scanResult?.status === 'success' ? <CheckCircle2 className="w-10 h-10" /> : <XCircle className="w-10 h-10" />}
+                </div>
+
+                <h3 className={`text-2xl font-bold mb-2 ${scanResult?.status === 'success' ? 'text-green-600 dark:text-green-400' : scanResult?.status === 'already_checked_in' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {scanResult?.text || 'Invalid Ticket'}
+                </h3>
+
+                {errorMsg ? (
+                  <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{errorMsg}</p>
+                ) : (
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 w-full max-w-sm mb-6 shadow-sm">
+                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Name:</span> {scanResult?.name}</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Email:</span> {scanResult?.email}</p>
+                    {scanResult?.time && <p className="text-sm text-gray-800 dark:text-gray-200"><span className="font-semibold">Time:</span> {scanResult?.time}</p>}
+                  </div>
+                )}
+
+                <button onClick={resetScanner} className="w-full max-w-sm bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg hover:bg-orange-400 transition-colors shadow-sm">
+                  Scan Next Attendee
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ✅ Right Column: Live Feed — now shows name, email, time + status badge */}
+        <div className="w-full md:w-80 flex flex-col md:h-full">
+          {recentScans.length > 0 ? (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
+                <History className="w-4 h-4 text-[#FFA45C]" />
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Check-ins</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {recentScans.map((scan, index) => (
+                  <div key={`${scan.name}-${scan.time}-${index}`} className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 animate-in slide-in-from-right-4 duration-300">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{scan.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{scan.email}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{scan.time}</span>
+                    </div>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-md shrink-0 ${
+                      scan.status === 'success'
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                        : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400'
+                    }`}>
+                      {scan.status === 'success' ? 'Checked In' : 'Duplicate'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={() => { setRecentScans([]); localStorage.removeItem(FEED_KEY); }}
+                  className="w-full text-xs font-medium text-gray-400 hover:text-red-500 transition-colors py-1"
+                >
+                  Clear feed
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center h-full flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-800/50 rounded-full flex items-center justify-center mb-4"><CheckCircle2 className="w-8 h-8 text-blue-500" /></div>
-            <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Ready to Scan</h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">Point the camera at the attendee's QR code. The system will automatically detect it.</p>
-          </div>
-        )}
+          ) : (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 text-center h-full flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-orange-50 dark:bg-orange-500/10 rounded-full flex items-center justify-center mb-4">
+                <ScanLine className="w-8 h-8 text-[#FFA45C]" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Ready to Scan</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Select a mode above and start scanning attendees.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
