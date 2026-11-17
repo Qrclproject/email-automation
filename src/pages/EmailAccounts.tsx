@@ -9,7 +9,15 @@ export default function EmailAccounts() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
+    // Initial fetch
     fetchAccounts();
+
+    // Poll the API every 15 seconds to update the quota bars automatically
+    const interval = setInterval(() => {
+      fetchAccounts();
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [fetchAccounts]);
 
   const handleConnectGmail = async () => {
@@ -82,7 +90,7 @@ export default function EmailAccounts() {
                       <div className="flex items-center gap-2">
                         <span className="text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">{account.sentToday} / {account.dailyLimit}</span>
                         <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${account.sentToday >= account.dailyLimit ? 'bg-red-500' : 'bg-[#FFA45C]'}`} style={{ width: `${Math.min((account.sentToday / account.dailyLimit) * 100, 100)}%` }} />
+                          <div className={`h-full rounded-full ${account.sentToday >= account.dailyLimit ? 'bg-red-500' : 'bg-[#FFA45C]'}`} style={{ width: `${Math.min((account.sentToday / (account.dailyLimit as number)) * 100, 100)}%` }} />
                         </div>
                       </div>
                     </td>
