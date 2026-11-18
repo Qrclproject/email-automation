@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Pause, Search, Loader2, AlertCircle, RefreshCw, UserPlus } from 'lucide-react';
+import { ArrowLeft, Download, Pause, Search, Loader2, AlertCircle, RefreshCw, UserPlus, RotateCcw } from 'lucide-react';
 import { api } from '../../services/api';
 import AddRecipientsModal from '../../components/campaign/AddRecipientsModal';
 
@@ -34,6 +34,17 @@ export default function CampaignDetails() {
 
     return () => clearInterval(interval);
   }, [id, campaign?.status, isAddModalOpen]);
+
+  const handleResetCheckIn = async (email: string) => {
+    if (!window.confirm(`Are you sure you want to reset the QR code for ${email}? This will allow them to check-in again.`)) return;
+    
+    try {
+      await api.post(`/campaigns/${id}/reset-checkin`, { email });
+      fetchCampaign(); // Refresh the table
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to reset check-in');
+    }
+  };
 
   if (loading) {
     return (
@@ -73,15 +84,17 @@ export default function CampaignDetails() {
   const bouncedCount = campaign.bouncedCount || 0;
 
   const handleExport = () => {
-    const headers = ['Name', 'Email', 'Status', 'Error', 'Sent At'];
+    const headers = ['Name', 'Email', 'Status', 'Checked In', 'Check-in Time', 'Error', 'Sent At'];
     
     const csvData = recipients.map((r: any) => {
       const name = getRecipientName(r.data);
       const email = r.data?.email || r.data?.['Email Address'] || r.data?.['Email'] || 'N/A';
       const time = r.sentAt ? new Date(r.sentAt).toLocaleString() : '-';
       const error = r.error ? `"${r.error.replace(/"/g, '""')}"` : '-';
+      const checkedIn = r.checkedIn ? 'Yes' : 'No';
+      const checkInTime = r.checkedInAt ? new Date(r.checkedInAt).toLocaleString() : '-';
       
-      return [name, email, r.status || 'Pending', error, time].join(',');
+      return [name, email, r.status || 'Pending', checkedIn, checkInTime, error, time].join(',');
     });
 
     const csvContent = [headers.join(','), ...csvData].join('\n');
@@ -155,7 +168,7 @@ export default function CampaignDetails() {
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recipient Log</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recipient Log & Check-in</h2>
         <div className="relative w-full md:w-72">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
@@ -170,14 +183,14 @@ export default function CampaignDetails() {
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm transition-colors">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[800px]">
+          <table className="w-full text-left text-sm min-w-[900px]">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
               <tr>
                 <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Name</th>
                 <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Email</th>
-                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Time</th>
-                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 w-1/3">Error Details</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Email Status</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400">Check-in Status</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-gray-400 w-1/4">Error Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -200,14 +213,28 @@ export default function CampaignDetails() {
                         <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
                           r.status === 'Sent' || r.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                           r.status === 'Failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 
-                          r.status === 'Bounced' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                           'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                         }`}>
                           {r.status || 'Pending'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {r.sentAt ? new Date(r.sentAt).toLocaleTimeString() : '-'}
+                      <td className="px-6 py-4">
+                        {r.checkedIn ? (
+                          <div className="flex items-center gap-2">
+                            <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-md text-xs font-semibold">
+                              Checked In
+                            </span>
+                            <button 
+                              onClick={() => handleResetCheckIn(email)}
+                              className="p-1.5 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-md transition-colors"
+                              title="Reset QR Code (Allow re-entry)"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs">Not checked in</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-red-500 dark:text-red-400">
                         {r.error ? (
@@ -228,7 +255,6 @@ export default function CampaignDetails() {
         </div>
       </div>
 
-      {/* MODAL NOW RECEIVES THE FULL CAMPAIGN OBJECT */}
       {isAddModalOpen && campaign && (
         <AddRecipientsModal 
           campaign={campaign}

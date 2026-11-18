@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { UploadCloud, X, Loader2, Send, ChevronRight, ChevronLeft, Trash2, PlusCircle, PlusSquare, ArrowRight } from 'lucide-react';
+import { UploadCloud, X, Send, ChevronRight, ChevronLeft, Trash2, PlusCircle, PlusSquare, ArrowRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { api } from '../../services/api';
 import GmailPreview from '../preview/GmailPreview';
