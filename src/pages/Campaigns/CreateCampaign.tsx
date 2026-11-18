@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCampaignStore } from '../../store/useCampaignStore';
-import { useAccountStore } from '../../store/useAccountStore'; // <-- Import Store
+import { useAccountStore } from '../../store/useAccountStore';
 import AudienceUploader from '../../components/campaign/AudienceUploader';
 import SpreadsheetEditor from '../../components/campaign/SpreadsheetEditor';
 import EmailComposer from '../../components/campaign/EmailComposer';
@@ -13,12 +13,11 @@ import { api } from '../../services/api';
 export default function CreateCampaign() {
   const { 
     step, setStep, subject, senderAccount, selectedTemplate, 
-    variableMappings, excelData, excelColumns, resetCampaign, emailBody
+    variableMappings, excelData, excelColumns, resetCampaign, emailBody,
+    checkInDisplayColumns // <-- EXTRACTED
   } = useCampaignStore();
   
-  // Get accounts to check quota
   const { accounts } = useAccountStore(); 
-  
   const navigate = useNavigate();
   
   const [isLaunching, setIsLaunching] = useState(false);
@@ -42,7 +41,6 @@ export default function CreateCampaign() {
   };
 
   const handleSend = async () => {
-    // --- QUOTA VALIDATION BEFORE SENDING ---
     const selectedAcc = accounts.find(a => a.email === senderAccount);
     
     if (!selectedAcc) {
@@ -54,7 +52,6 @@ export default function CreateCampaign() {
     if (excelData.length > remainingQuota) {
       return alert(`Quota Exceeded! \n\nYou are trying to send to ${excelData.length} recipients, but the account ${senderAccount} only has ${remainingQuota} emails remaining for today (Limit: ${selectedAcc.dailyLimit}).\n\nPlease wait until tomorrow or use a different account.`);
     }
-    // ---------------------------------------
 
     setIsLaunching(true);
     setLaunchStage('preparing'); 
@@ -78,6 +75,7 @@ export default function CreateCampaign() {
         recipients: recipients,
         variableMappings: variableMappings,
         emailBody: emailBody,
+        checkInDisplayColumns: checkInDisplayColumns, // <-- INCLUDED IN PAYLOAD
       });
 
       const campaignId = response.data._id;
@@ -216,6 +214,14 @@ export default function CreateCampaign() {
                     <span className="text-gray-500 dark:text-gray-400">Sending Account</span>
                     <span className="font-medium text-gray-900 dark:text-white truncate max-w-[150px]">{senderAccount}</span>
                   </div>
+                  <div className="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <span className="text-gray-500 dark:text-gray-400">Check-in Details</span>
+                    <span className="font-medium text-gray-900 dark:text-white text-right">
+                      {checkInDisplayColumns.length > 0 
+                        ? `${checkInDisplayColumns.length} columns selected` 
+                        : 'Default'}
+                    </span>
+                  </div>
                 </div>
                 
                 <button onClick={handleSend} disabled={isLaunching} className="w-full bg-[#FFA45C] text-[#2b1500] font-bold py-3 rounded-lg mb-3 hover:bg-orange-400 transition-colors shadow-sm disabled:opacity-50 flex justify-center items-center gap-2">
@@ -268,4 +274,4 @@ export default function CreateCampaign() {
       )}
     </div>
   );
-}
+}  

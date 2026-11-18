@@ -61,7 +61,7 @@ export default function QRScanner() {
       const email = attendee.email || attendee['Email Address'] || 'N/A';
       const timeStr = new Date(response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
-      setScanResult({ status: 'success', name, email, time: timeStr, text: 'Access Granted' });
+      setScanResult({ status: 'success', name, email, time: timeStr, text: 'Access Granted', data: attendee });
       addScan({ name, email, time: timeStr, status: 'success' });
 
     } catch (err: any) {
@@ -73,7 +73,7 @@ export default function QRScanner() {
         const email = attendee.email || attendee['Email Address'] || 'N/A';
         const time = new Date(err.response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
-        setScanResult({ status: 'already_checked_in', name, email, time, text: 'Ticket Already Used!' });
+        setScanResult({ status: 'already_checked_in', name, email, time, text: 'Ticket Already Used!', data: attendee });
         // ✅ Duplicates now appear in the feed too
         addScan({ name, email, time, status: 'duplicate' });
       } else {
@@ -143,6 +143,13 @@ export default function QRScanner() {
     isProcessingRef.current = false;
   };
 
+  const handleClearFeed = () => {
+    if (window.confirm("Are you sure you want to clear the recent check-ins feed? This will only clear the display on this device.")) {
+      setRecentScans([]);
+      localStorage.removeItem(FEED_KEY);
+    }
+  };
+
   if (loading) return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#FFA45C]"/></div>;
 
   return (
@@ -171,7 +178,6 @@ export default function QRScanner() {
         </div>
       </div>
 
-      {/* ✅ md: breakpoint restored so the feed sits beside the scanner on medium screens */}
       <div className="flex flex-col md:flex-row gap-6 md:h-[calc(100vh-18rem)]">
         <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col relative min-h-[520px] md:min-h-0">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-wrap items-center justify-between gap-3 z-20">
@@ -262,9 +268,24 @@ export default function QRScanner() {
                   <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{errorMsg}</p>
                 ) : (
                   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 w-full max-w-sm mb-6 shadow-sm">
-                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Name:</span> {scanResult?.name}</p>
-                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Email:</span> {scanResult?.email}</p>
-                    {scanResult?.time && <p className="text-sm text-gray-800 dark:text-gray-200"><span className="font-semibold">Time:</span> {scanResult?.time}</p>}
+                    {/* DYNAMIC CHECK-IN COLUMNS */}
+                    {campaign?.checkInDisplayColumns && campaign.checkInDisplayColumns.length > 0 ? (
+                      campaign.checkInDisplayColumns.map((col: string) => (
+                        <div key={col} className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0">
+                          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{col}:</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white text-right break-words max-w-[60%]">
+                            {scanResult?.data?.[col] || 'N/A'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      // Fallback if no columns were selected
+                      <>
+                        <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Name:</span> {scanResult?.name}</p>
+                        <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Email:</span> {scanResult?.email}</p>
+                        {scanResult?.time && <p className="text-sm text-gray-800 dark:text-gray-200"><span className="font-semibold">Time:</span> {scanResult?.time}</p>}
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -276,7 +297,7 @@ export default function QRScanner() {
           </div>
         </div>
 
-        {/* ✅ Right Column: Live Feed — now shows name, email, time + status badge */}
+        {/* Right Column: Live Feed */}
         <div className="w-full md:w-80 flex flex-col md:h-full">
           {recentScans.length > 0 ? (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
@@ -304,7 +325,7 @@ export default function QRScanner() {
               </div>
               <div className="p-3 border-t border-gray-100 dark:border-gray-700">
                 <button
-                  onClick={() => { setRecentScans([]); localStorage.removeItem(FEED_KEY); }}
+                  onClick={handleClearFeed}
                   className="w-full text-xs font-medium text-gray-400 hover:text-red-500 transition-colors py-1"
                 >
                   Clear feed

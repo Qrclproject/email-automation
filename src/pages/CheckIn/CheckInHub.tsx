@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Removed 'Link' from here
+import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, QrCode, List, Users } from 'lucide-react';
 import { api } from '../../services/api';
 

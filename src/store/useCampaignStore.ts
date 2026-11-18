@@ -8,10 +8,11 @@ export interface Template {
   qrPosition?: any;
   qrPadding?: number;
   qrConfig?: any;
-  qrDataField?: string; // <-- ADD THIS LINE
+  qrDataField?: string;
   textOverlays?: any[];
   variables?: string[];
 }
+
 export const SAMPLE_BUSYBEE_EMAIL = `
   <p style="text-align: center;"><img src="https://placehold.co/200x60/ffffff/3b82f6?text=BUSYBEE+LOGO" alt="BusyBee Logo" style="max-width: 200px;" /></p>
   <hr />
@@ -52,6 +53,7 @@ export interface CampaignState {
   excelColumns: string[];
   excelData: Record<string, string>[];
   fileName: string | null;
+  checkInDisplayColumns: string[]; // <-- NEW
 
   emailBody: string;
   attachments: File[];
@@ -71,6 +73,8 @@ export interface CampaignState {
   fillColumn: (column: string, value: string) => void;
   clearSpreadsheet: () => void;
 
+  toggleCheckInColumn: (columnName: string) => void; // <-- NEW
+
   setEmailBody: (body: string) => void;
   addAttachment: (file: File) => void;
   removeAttachment: (index: number) => void;
@@ -87,6 +91,7 @@ export const useCampaignStore = create<CampaignState>((set) => ({
   excelColumns: [],
   excelData: [],
   fileName: null,
+  checkInDisplayColumns: [], // <-- NEW
 
   emailBody: '<p>Hi [Recipient Name],</p><p>You are cordially invited. Please find your personalized invitation below.</p><p><br></p><p>Best regards,<br>QRCODENG Team</p>',
   attachments: [],
@@ -129,7 +134,11 @@ export const useCampaignStore = create<CampaignState>((set) => ({
       delete newRow[columnName];
       return newRow;
     });
-    return { excelColumns: newCols, excelData: newData };
+    
+    // NEW: Remove from check-in display if it was selected
+    const newCheckInCols = state.checkInDisplayColumns.filter(c => c !== columnName);
+    
+    return { excelColumns: newCols, excelData: newData, checkInDisplayColumns: newCheckInCols };
   }),
 
   renameColumn: (oldName, newName) => set((state) => {
@@ -144,19 +153,35 @@ export const useCampaignStore = create<CampaignState>((set) => ({
       return newRow;
     });
 
+    // Update variable mappings
     const newMappings = { ...state.variableMappings };
     Object.keys(newMappings).forEach(key => {
       if (newMappings[key] === oldName) newMappings[key] = trimmedNewName;
     });
 
-    return { excelColumns: newCols, excelData: newData, variableMappings: newMappings };
+    // NEW: Update check-in display columns mapping
+    const newCheckInCols = state.checkInDisplayColumns.map(c => c === oldName ? trimmedNewName : c);
+
+    return { excelColumns: newCols, excelData: newData, variableMappings: newMappings, checkInDisplayColumns: newCheckInCols };
   }),
 
   fillColumn: (column, value) => set((state) => ({
     excelData: state.excelData.map(row => ({ ...row, [column]: value }))
   })),
 
-  clearSpreadsheet: () => set({ excelColumns: [], excelData: [], fileName: null }),
+  clearSpreadsheet: () => set({ 
+    excelColumns: [], 
+    excelData: [], 
+    fileName: null,
+    checkInDisplayColumns: [] // <-- NEW: Reset check-in columns when clearing sheet
+  }),
+  
+  // <-- NEW ACTION
+  toggleCheckInColumn: (columnName) => set((state) => ({
+    checkInDisplayColumns: state.checkInDisplayColumns.includes(columnName)
+      ? state.checkInDisplayColumns.filter((c) => c !== columnName)
+      : [...state.checkInDisplayColumns, columnName]
+  })),
   
   setEmailBody: (body) => set({ emailBody: body }),
   addAttachment: (file) => set((state) => ({ attachments: [...state.attachments, file] })),
@@ -169,6 +194,7 @@ export const useCampaignStore = create<CampaignState>((set) => ({
     excelColumns: [], 
     excelData: [], 
     fileName: null,
+    checkInDisplayColumns: [], // <-- NEW: Reset on campaign reset
     selectedTemplate: null, 
     variableMappings: {}, 
     emailBody: '<p>Hi [Recipient Name],</p><p>You are cordially invited. Please find your personalized invitation below.</p><p><br></p><p>Best regards,<br>QRCODENG Team</p>', 

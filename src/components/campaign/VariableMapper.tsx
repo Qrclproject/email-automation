@@ -1,41 +1,42 @@
 import { useCampaignStore } from '../../store/useCampaignStore';
-import { QrCode, Type } from 'lucide-react';
+import { QrCode, Type, CheckCircle2 } from 'lucide-react';
 
 export default function VariableMapper() {
-  const { excelColumns, variableMappings, setMapping, selectedTemplate, emailBody } = useCampaignStore();
+  const { 
+    excelColumns, 
+    variableMappings, 
+    setMapping, 
+    selectedTemplate, 
+    emailBody,
+    checkInDisplayColumns,
+    toggleCheckInColumn
+  } = useCampaignStore();
 
   if (excelColumns.length === 0) {
     return <div className="p-8 text-center bg-orange-50 text-orange-800 rounded-xl border border-orange-100">Please go back to Step 1 and upload an Excel file.</div>;
   }
 
-  // Safe fallback for templateVars
   const templateVars = selectedTemplate?.variables || [];
   const textMatches = emailBody.match(/(\{\{.*?\}\}|\[.*?\])/g) || [];
   const allVars = Array.from(new Set([...templateVars, ...textMatches]));
   
-  // NEW: Check if the template has a specific QR data field
   const qrField = selectedTemplate?.qrDataField;
-  
-  // We want the QR var to be whatever is in the template's qrDataField. 
-  // Fallback to looking for "QR" in the variables.
   const qrVar = qrField || allVars.find(v => v.includes('QR'));
-  
-  // Filter out the qrVar from the textVars so it doesn't show up twice
   const textVars = allVars.filter(v => v !== qrVar);
 
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Map Variables to Excel Data</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Map Variables & Check-in Setup</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {selectedTemplate ? `Template attached: ${selectedTemplate.name}` : 'No template attached. Mapping text variables only.'}
           </p>
         </div>
 
         {allVars.length === 0 && !qrVar ? (
-          <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No dynamic variables found in your email body or template. You can proceed to the next step.</p>
+          <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 mb-8">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">No dynamic variables found in your email body or template.</p>
           </div>
         ) : (
           <>
@@ -67,7 +68,7 @@ export default function VariableMapper() {
             </div>
 
             {qrVar && (
-              <div className="space-y-4">
+              <div className="space-y-4 mb-8">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
                   <QrCode className="w-4 h-4" /> QR Code Payload
                 </h3>
@@ -92,6 +93,42 @@ export default function VariableMapper() {
             )}
           </>
         )}
+
+        {/* CHECK-IN DISPLAY COLUMNS */}
+        <div className="space-y-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
+            <CheckCircle2 className="w-4 h-4 text-green-500" /> Check-in Screen Details
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Select which details should be displayed when the QR code is scanned at the door. 
+            <span className="block mt-1 text-xs font-medium text-orange-600 dark:text-orange-400">(E.g., Name, Ticket Type, Seating Plan).</span>
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {excelColumns.map(col => (
+              <label 
+                key={col} 
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  checkInDisplayColumns.includes(col) 
+                    ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                    : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checkInDisplayColumns.includes(col)}
+                  onChange={() => toggleCheckInColumn(col)}
+                  className="accent-[#FFA45C] w-4 h-4 rounded"
+                />
+                <span className={`text-sm font-medium ${
+                  checkInDisplayColumns.includes(col) 
+                    ? 'text-green-800 dark:text-green-400' 
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}>{col}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
