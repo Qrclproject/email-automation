@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Pause, Search, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, Pause, Search, Loader2, AlertCircle, RefreshCw, UserPlus } from 'lucide-react';
 import { api } from '../../services/api';
+import AddRecipientsModal from '../../components/campaign/AddRecipientsModal';
 
 export default function CampaignDetails() {
   const { id } = useParams();
@@ -9,6 +10,7 @@ export default function CampaignDetails() {
   const [searchTerm, setSearchTerm] = useState('');
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const fetchCampaign = async () => {
     try {
@@ -25,13 +27,13 @@ export default function CampaignDetails() {
     fetchCampaign();
     
     const interval = setInterval(() => {
-      if (campaign && (campaign.status === 'Sending' || campaign.status === 'Scheduled')) {
+      if ((campaign && (campaign.status === 'Sending' || campaign.status === 'Scheduled')) || isAddModalOpen) {
         fetchCampaign();
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [id, campaign?.status]);
+  }, [id, campaign?.status, isAddModalOpen]);
 
   if (loading) {
     return (
@@ -47,7 +49,6 @@ export default function CampaignDetails() {
 
   const recipients = campaign.recipients || [];
   
-  // Helper function to extract name dynamically
   const getRecipientName = (data: any) => {
     if (!data) return 'Unknown';
     return data['Full Name'] || 
@@ -55,7 +56,7 @@ export default function CampaignDetails() {
            data['Attendee Name'] || 
            data['Recipient Name'] || 
            data['name'] || 
-           Object.values(data)[0] || // Fallback to the very first column in the CSV
+           Object.values(data)[0] || 
            'Unknown';
   };
 
@@ -112,7 +113,14 @@ export default function CampaignDetails() {
           </div>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button 
+            onClick={() => setIsAddModalOpen(true)} 
+            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 flex items-center gap-2 transition-colors"
+          >
+            <UserPlus className="w-4 h-4"/> Add Recipients
+          </button>
+
           <button onClick={handleExport} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
             <Download className="w-4 h-4"/> Export Results
           </button>
@@ -219,6 +227,19 @@ export default function CampaignDetails() {
           </table>
         </div>
       </div>
+
+      {/* MODAL NOW RECEIVES THE FULL CAMPAIGN OBJECT */}
+      {isAddModalOpen && campaign && (
+        <AddRecipientsModal 
+          campaign={campaign}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            fetchCampaign(); 
+            alert('New recipients added successfully!');
+          }}
+        />
+      )}
     </div>
   );
 }
