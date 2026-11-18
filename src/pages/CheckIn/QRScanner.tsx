@@ -55,10 +55,11 @@ export default function QRScanner() {
     try {
       const response = await api.post(`/campaigns/${id}/checkin`, { scannedValue: scannedText });
 
-      // ✅ Defensive extraction — never throws, feed always updates
       const attendee = response.data?.attendee ?? {};
-      const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee.Name || attendee.name || 'Unknown';
-      const email = attendee.email || attendee['Email Address'] || 'N/A';
+      
+      // ✅ Improved extraction for the side feed to handle any column naming convention
+      const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee['Name'] || attendee.name || attendee['name'] || attendee['Recipient Name'] || 'Unknown';
+      const email = attendee.email || attendee['Email Address'] || attendee['Email'] || attendee['email address'] || attendee['email'] || 'N/A';
       const timeStr = new Date(response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
       setScanResult({ status: 'success', name, email, time: timeStr, text: 'Access Granted', data: attendee });
@@ -69,12 +70,13 @@ export default function QRScanner() {
 
       if (errorMessage === 'Already checked in') {
         const attendee = err.response?.data?.attendee ?? {};
-        const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee.Name || attendee.name || 'Unknown';
-        const email = attendee.email || attendee['Email Address'] || 'N/A';
+        
+        // ✅ Same improved extraction for duplicates
+        const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee['Name'] || attendee.name || attendee['name'] || attendee['Recipient Name'] || 'Unknown';
+        const email = attendee.email || attendee['Email Address'] || attendee['Email'] || attendee['email address'] || attendee['email'] || 'N/A';
         const time = new Date(err.response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
         setScanResult({ status: 'already_checked_in', name, email, time, text: 'Ticket Already Used!', data: attendee });
-        // ✅ Duplicates now appear in the feed too
         addScan({ name, email, time, status: 'duplicate' });
       } else {
         setErrorMsg(errorMessage);
@@ -268,7 +270,6 @@ export default function QRScanner() {
                   <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{errorMsg}</p>
                 ) : (
                   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 w-full max-w-sm mb-6 shadow-sm">
-                    {/* DYNAMIC CHECK-IN COLUMNS */}
                     {campaign?.checkInDisplayColumns && campaign.checkInDisplayColumns.length > 0 ? (
                       campaign.checkInDisplayColumns.map((col: string) => (
                         <div key={col} className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0">
@@ -279,7 +280,6 @@ export default function QRScanner() {
                         </div>
                       ))
                     ) : (
-                      // Fallback if no columns were selected
                       <>
                         <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Name:</span> {scanResult?.name}</p>
                         <p className="text-sm text-gray-800 dark:text-gray-200 mb-1"><span className="font-semibold">Email:</span> {scanResult?.email}</p>
