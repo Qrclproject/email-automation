@@ -4,8 +4,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, ScanLine, CameraOff, History, Camera, Barcode } from 'lucide-react';
 import { api } from '../../services/api';
 
-const FEED_KEY = 'recent-checkins';
-
 export default function QRScanner() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,9 +15,16 @@ export default function QRScanner() {
   const [scanMode, setScanMode] = useState<'camera' | 'external'>('camera');
   const [manualCode, setManualCode] = useState('');
 
-  // ✅ Persisted feed — survives remounts, StrictMode double-mounts and navigation
+  // ✅ Dynamic key tied to the specific campaign ID
+  const FEED_KEY = `recent-checkins-${id}`;
+
+  // ✅ Persisted feed per campaign — survives remounts and navigation
   const [recentScans, setRecentScans] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem(FEED_KEY) || '[]'); } catch { return []; }
+    try { 
+      return JSON.parse(localStorage.getItem(FEED_KEY) || '[]'); 
+    } catch { 
+      return []; 
+    }
   });
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -29,10 +34,10 @@ export default function QRScanner() {
   const manualInputRef = useRef<HTMLInputElement>(null);
 
   // ✅ Single source of truth for logging a scan to the side feed
-  const addScan = (entry: { name: string; email: string; time: string; status: 'success' | 'duplicate' }) => {
+  const addScan = (entry: { name: string; email: string; time: string; status: 'success' | 'duplicate'; data: any }) => {
     setRecentScans(prev => {
-      const next = [entry, ...prev].slice(0, 5);
-      localStorage.setItem(FEED_KEY, JSON.stringify(next));
+      const next = [entry, ...prev].slice(0, 8); // Increased to 8 to show more details
+      localStorage.setItem(FEED_KEY, JSON.stringify(next)); // FIXED: Using FEED_KEY
       return next;
     });
   };
@@ -57,13 +62,12 @@ export default function QRScanner() {
 
       const attendee = response.data?.attendee ?? {};
       
-      // ✅ Improved extraction for the side feed to handle any column naming convention
       const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee['Name'] || attendee.name || attendee['name'] || attendee['Recipient Name'] || 'Unknown';
       const email = attendee.email || attendee['Email Address'] || attendee['Email'] || attendee['email address'] || attendee['email'] || 'N/A';
       const timeStr = new Date(response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
       setScanResult({ status: 'success', name, email, time: timeStr, text: 'Access Granted', data: attendee });
-      addScan({ name, email, time: timeStr, status: 'success' });
+      addScan({ name, email, time: timeStr, status: 'success', data: attendee });
 
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Error processing ticket';
@@ -71,13 +75,12 @@ export default function QRScanner() {
       if (errorMessage === 'Already checked in') {
         const attendee = err.response?.data?.attendee ?? {};
         
-        // ✅ Same improved extraction for duplicates
         const name = attendee['Full Name'] || attendee['Attendee Name'] || attendee['Name'] || attendee.name || attendee['name'] || attendee['Recipient Name'] || 'Unknown';
         const email = attendee.email || attendee['Email Address'] || attendee['Email'] || attendee['email address'] || attendee['email'] || 'N/A';
         const time = new Date(err.response.data?.checkedInAt ?? Date.now()).toLocaleTimeString();
 
         setScanResult({ status: 'already_checked_in', name, email, time, text: 'Ticket Already Used!', data: attendee });
-        addScan({ name, email, time, status: 'duplicate' });
+        addScan({ name, email, time, status: 'duplicate', data: attendee });
       } else {
         setErrorMsg(errorMessage);
       }
@@ -146,9 +149,9 @@ export default function QRScanner() {
   };
 
   const handleClearFeed = () => {
-    if (window.confirm("Are you sure you want to clear the recent check-ins feed? This will only clear the display on this device.")) {
+    if (window.confirm("Are you sure you want to clear the recent check-ins feed for this event? This will only clear the display on this device.")) {
       setRecentScans([]);
-      localStorage.removeItem(FEED_KEY);
+      localStorage.removeItem(FEED_KEY); // FIXED: Using FEED_KEY
     }
   };
 
@@ -307,18 +310,36 @@ export default function QRScanner() {
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {recentScans.map((scan, index) => (
-                  <div key={`${scan.name}-${scan.time}-${index}`} className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 animate-in slide-in-from-right-4 duration-300">
-                    <div className="flex flex-col min-w-0">
+                  <div key={`${scan.name}-${scan.time}-${index}`} className="flex items-start justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 animate-in slide-in-from-right-4 duration-300">
+                    
+                    {/* Complete Details Column */}
+                    <div className="flex flex-col min-w-0 flex-1">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{scan.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{scan.email}</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">{scan.time}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{scan.email}</span>
+                      
+                      {/* Display extra columns selected during campaign creation */}
+                      {scan.data && campaign?.checkInDisplayColumns && (
+                        <div className="flex flex-col gap-0.5 border-t border-gray-200 dark:border-gray-600/50 pt-1 mt-1">
+                          {campaign.checkInDisplayColumns
+                            .filter((c: string) => !['name', 'full name', 'attendee name', 'email', 'email address'].includes(c.toLowerCase()))
+                            .map((col: string) => (
+                              <span key={col} className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                                <span className="font-medium text-gray-500 dark:text-gray-400">{col}:</span> {scan.data[col] || 'N/A'}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                      
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{scan.time}</span>
                     </div>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-md shrink-0 ${
+
+                    {/* Status Badge */}
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md shrink-0 self-start ${
                       scan.status === 'success'
                         ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
                         : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400'
                     }`}>
-                      {scan.status === 'success' ? 'Checked In' : 'Duplicate'}
+                      {scan.status === 'success' ? 'Checked In' : 'Already Checked In'}
                     </span>
                   </div>
                 ))}
